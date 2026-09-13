@@ -1,0 +1,24 @@
+<header class="app-header">
+  <a class="brand" routerLink="/" aria-label="Route Optimizer home">
+    <span class="brand-mark" aria-hidden="true"><i></i><i></i></span>
+    <span>Route<br /><b>Optimizer</b></span>
+  </a>
+
+  <nav aria-label="Primary navigation">
+    <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+      Route builder
+    </a>
+    <a routerLink="/jobs" routerLinkActive="active">Job status</a>
+  </nav>
+
+  <span class="system-status"><i></i> Routing engine online</span>
+</header>
+
+<main>
+  <router-outlet />
+</main>
+
+<footer>
+  <span>Route Optimizer</span>
+  <p>Custom pathfinding · OpenStreetMap data · Built for transparent routing</p>
+</footer>

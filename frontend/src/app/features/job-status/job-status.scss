@@ -1,0 +1,252 @@
+:host {
+  display: block;
+}
+
+.status-page {
+  width: min(820px, calc(100% - 3rem));
+  margin: 0 auto;
+  padding: 6rem 0;
+}
+
+.status-intro {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem 3rem;
+  align-items: end;
+  margin-bottom: 3rem;
+}
+
+.eyebrow {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: #d15336;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+h1 {
+  margin: 0;
+  color: #132720;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(3rem, 7vw, 5rem);
+  font-weight: 400;
+  letter-spacing: -0.05em;
+}
+
+.status-intro > p:last-child {
+  margin: 0 0 0.5rem;
+  color: #68736d;
+  line-height: 1.65;
+}
+
+.lookup-form {
+  margin-bottom: 1rem;
+  border: 1px solid #d9ddd4;
+  background: #fffef9;
+  padding: 1.25rem;
+}
+
+label,
+.label,
+.route-reference span {
+  display: block;
+  margin-bottom: 0.55rem;
+  color: #78827b;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.lookup-form > div {
+  display: grid;
+  grid-template-columns: 1fr auto;
+}
+
+input,
+button {
+  height: 3.25rem;
+  border-radius: 0;
+  font: inherit;
+}
+
+input {
+  min-width: 0;
+  border: 1px solid #ccd2c9;
+  outline: none;
+  background: #faf9f3;
+  padding: 0 1rem;
+}
+
+input:focus {
+  border-color: #557365;
+}
+
+button {
+  border: 0;
+  background: #d15336;
+  color: white;
+  padding: 0 1.5rem;
+  font-size: 0.82rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.status-card {
+  min-height: 310px;
+  border: 1px solid #d9ddd4;
+  background: #193229;
+  color: #f7f4e9;
+  padding: clamp(1.75rem, 5vw, 3rem);
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 2rem;
+  border: 1px solid #536d61;
+  border-radius: 2rem;
+  padding: 0.45rem 0.75rem;
+  color: #d7dfda;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.status-badge span {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: #e27858;
+}
+
+.status-badge[data-status='completed'] span {
+  background: #74bb8f;
+}
+
+.status-badge[data-status='failed'] span {
+  background: #ff8067;
+}
+
+code {
+  display: block;
+  overflow: hidden;
+  color: #f7f4e9;
+  font-size: 0.85rem;
+  text-overflow: ellipsis;
+}
+
+.timeline {
+  display: grid;
+  grid-template-columns: auto 1fr auto 1fr auto;
+  align-items: start;
+  margin: 3rem 0;
+}
+
+.timeline div {
+  display: grid;
+  justify-items: center;
+}
+
+.timeline span {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  place-items: center;
+  border: 1px solid #587066;
+  border-radius: 50%;
+  color: #8da097;
+  font-size: 0.7rem;
+}
+
+.timeline .complete span {
+  border-color: #e27858;
+  background: #e27858;
+  color: #193229;
+}
+
+.timeline p {
+  margin: 0.55rem 0 0;
+  color: #99aaa1;
+  font-size: 0.68rem;
+}
+
+.timeline i {
+  margin-top: 1rem;
+  border-top: 1px dashed #587066;
+}
+
+.route-reference {
+  border-top: 1px solid rgb(255 255 255 / 13%);
+  padding-top: 1.25rem;
+}
+
+.route-reference strong {
+  font-family: monospace;
+  font-size: 0.82rem;
+  font-weight: 400;
+}
+
+.empty-status {
+  display: grid;
+  min-height: 250px;
+  place-content: center;
+  justify-items: center;
+  text-align: center;
+}
+
+.empty-status > span {
+  display: grid;
+  width: 3rem;
+  height: 3rem;
+  margin-bottom: 1.5rem;
+  place-items: center;
+  border: 1px solid #587066;
+  border-radius: 50%;
+  color: #e27858;
+  font-size: 1.3rem;
+}
+
+.empty-status strong {
+  font-family: Georgia, serif;
+  font-size: 1.4rem;
+  font-weight: 400;
+}
+
+.empty-status p {
+  margin: 0.6rem 0 0;
+  color: #95a69d;
+  font-size: 0.8rem;
+}
+
+.error-message {
+  border-left: 3px solid #c8462b;
+  background: #fff3ed;
+  color: #8e321f;
+  padding: 0.8rem 1rem;
+  font-size: 0.85rem;
+}
+
+@media (max-width: 620px) {
+  .status-page {
+    width: min(100% - 1.25rem, 820px);
+    padding-top: 3.5rem;
+  }
+
+  .status-intro {
+    grid-template-columns: 1fr;
+  }
+
+  .lookup-form > div {
+    grid-template-columns: 1fr;
+  }
+}

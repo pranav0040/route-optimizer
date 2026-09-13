@@ -1,0 +1,192 @@
+<section class="builder-page">
+  <header class="page-heading">
+    <div>
+      <p class="eyebrow">Route workspace</p>
+      <h1>Plan the day,<br /><em>not the detours.</em></h1>
+    </div>
+    <p class="heading-copy">
+      Add your starting point and delivery stops. We’ll compare the original order with an optimized
+      route—without locking up your workspace on larger jobs.
+    </p>
+  </header>
+
+  <div class="workspace-grid">
+    <form class="route-form" (ngSubmit)="submit()">
+      <div class="section-label">
+        <span>01</span>
+        <div>
+          <h2>Starting point</h2>
+          <p>Enter coordinates in decimal degrees.</p>
+        </div>
+      </div>
+
+      <fieldset class="coordinate-grid">
+        <legend class="sr-only">Origin coordinates</legend>
+        <label>
+          <span>Latitude</span>
+          <input
+            name="originLat"
+            inputmode="decimal"
+            autocomplete="off"
+            [ngModel]="origin().lat"
+            (ngModelChange)="updateOrigin('lat', $event)"
+            placeholder="12.9716"
+          />
+        </label>
+        <label>
+          <span>Longitude</span>
+          <input
+            name="originLng"
+            inputmode="decimal"
+            autocomplete="off"
+            [ngModel]="origin().lng"
+            (ngModelChange)="updateOrigin('lng', $event)"
+            placeholder="77.5946"
+          />
+        </label>
+      </fieldset>
+
+      <div class="stops-header">
+        <div class="section-label">
+          <span>02</span>
+          <div>
+            <h2>Delivery stops</h2>
+            <p>{{ stopCount() }} of 25 stops</p>
+          </div>
+        </div>
+        <button
+          class="add-button"
+          type="button"
+          data-testid="add-stop"
+          [disabled]="stopCount() >= 25"
+          (click)="addStop()"
+        >
+          <span aria-hidden="true">＋</span> Add stop
+        </button>
+      </div>
+
+      <div class="stop-list">
+        @for (stop of stops(); track stop.id; let index = $index) {
+          <div class="stop-row" data-testid="stop-row">
+            <div class="stop-index" aria-hidden="true">
+              {{ (index + 1).toString().padStart(2, '0') }}
+            </div>
+            <label>
+              <span class="sr-only">Stop {{ index + 1 }} latitude</span>
+              <input
+                [name]="'stopLat' + stop.id"
+                inputmode="decimal"
+                autocomplete="off"
+                [ngModel]="stop.lat"
+                (ngModelChange)="updateStop(stop.id, 'lat', $event)"
+                placeholder="Latitude"
+              />
+            </label>
+            <label>
+              <span class="sr-only">Stop {{ index + 1 }} longitude</span>
+              <input
+                [name]="'stopLng' + stop.id"
+                inputmode="decimal"
+                autocomplete="off"
+                [ngModel]="stop.lng"
+                (ngModelChange)="updateStop(stop.id, 'lng', $event)"
+                placeholder="Longitude"
+              />
+            </label>
+            <button
+              class="remove-button"
+              type="button"
+              data-testid="remove-stop"
+              (click)="removeStop(stop.id)"
+              [attr.aria-label]="'Remove stop ' + (index + 1)"
+            >
+              ×
+            </button>
+          </div>
+        }
+      </div>
+
+      @if (errorMessage()) {
+        <p class="error-message" role="alert">{{ errorMessage() }}</p>
+      }
+
+      <div class="submit-row">
+        <button class="submit-button" type="submit" [disabled]="loading()">
+          @if (loading()) {
+            <span class="spinner" aria-hidden="true"></span>
+            Optimizing route…
+          } @else {
+            Optimize {{ stopCount() }} stops <span aria-hidden="true">→</span>
+          }
+        </button>
+        <p>
+          {{
+            usesAsyncProcessing()
+              ? 'Runs safely in the background'
+              : 'Usually ready in under 2 seconds'
+          }}
+        </p>
+      </div>
+    </form>
+
+    <aside class="result-panel" aria-live="polite">
+      <div class="panel-topline">
+        <span>Route result</span>
+        <span class="status-dot" [class.active]="loading()"></span>
+      </div>
+
+      @if (currentRouteResult(); as result) {
+        @if (isRouteResult(result)) {
+          <div class="result-content">
+            <p class="result-kicker">Optimized route</p>
+            <strong>{{ (result.total_distance_m / 1000).toFixed(1) }} km</strong>
+            <span>{{ formatDuration(result.total_duration_s) }} estimated drive</span>
+            <div class="metric-grid">
+              <div>
+                <span>Distance saved</span>
+                <b>{{ result.improvement_pct.toFixed(1) }}%</b>
+              </div>
+              <div>
+                <span>Response</span>
+                <b>{{ result.cached ? 'Cached' : 'Fresh' }}</b>
+              </div>
+            </div>
+            <div class="order-block">
+              <span>Recommended stop order</span>
+              <p>
+                @for (stopIndex of result.optimized_order; track $index; let last = $last) {
+                  <b>{{ stopIndex + 1 }}</b>
+                  @if (!last) {
+                    <i>→</i>
+                  }
+                }
+              </p>
+            </div>
+          </div>
+        } @else if (isJobResult(result)) {
+          <div class="job-content">
+            <div class="job-orbit"><span></span></div>
+            <p class="result-kicker">Background job</p>
+            <strong>{{ result.status }}</strong>
+            <span class="job-id">{{ result.job_id }}</span>
+            @if ('route_id' in result && result.route_id) {
+              <p>Your optimized route is ready.</p>
+            } @else {
+              <p>You can leave this screen—the worker will keep going.</p>
+            }
+            <a [routerLink]="['/jobs']" [queryParams]="{ id: result.job_id }">Open job status →</a>
+          </div>
+        }
+      } @else {
+        <div class="empty-state">
+          <div class="route-mark" aria-hidden="true"><span></span><span></span><span></span></div>
+          <p class="result-kicker">Ready when you are</p>
+          <strong>Your route summary will appear here.</strong>
+          <span>Add at least two stops, then optimize.</span>
+        </div>
+      }
+    </aside>
+  </div>
+
+  <app-route-map />
+</section>

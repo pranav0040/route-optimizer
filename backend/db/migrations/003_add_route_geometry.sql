@@ -1,0 +1,3 @@
+ALTER TABLE routes
+  ADD COLUMN IF NOT EXISTS optimized_path JSONB NOT NULL DEFAULT '[]'::jsonb,
+  ADD COLUMN IF NOT EXISTS naive_path JSONB NOT NULL DEFAULT '[]'::jsonb;

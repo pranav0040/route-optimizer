@@ -1,0 +1,132 @@
+services:
+  postgres:
+    image: postgis/postgis:16-3.4
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-route_optimizer}
+      POSTGRES_USER: ${POSTGRES_USER:-route_optimizer}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-route_optimizer_dev}
+    ports:
+      - '${POSTGRES_PORT:-5432}:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  redis:
+    image: redis:7-alpine
+    command: ['redis-server', '--appendonly', 'yes']
+    restart: unless-stopped
+    ports:
+      - '${REDIS_PORT:-6379}:6379'
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+
+  api:
+    build:
+      context: ./backend
+    command: ['node', 'dist/src/server.js']
+    init: true
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: ${PORT:-3000}
+      DATABASE_URL: ${DATABASE_URL:-postgres://route_optimizer:route_optimizer_dev@postgres:5432/route_optimizer}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      CACHE_TTL_SECONDS: ${CACHE_TTL_SECONDS:-86400}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:4200}
+      RATE_LIMIT_MAX: ${RATE_LIMIT_MAX:-100}
+      TRUST_PROXY_HOPS: ${TRUST_PROXY_HOPS:-1}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    ports:
+      - '${PORT:-3000}:${PORT:-3000}'
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:' + process.env.PORT + '/api/health').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))"
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    stop_grace_period: 15s
+
+  migrate:
+    build:
+      context: ./backend
+    command: ['node', 'dist/scripts/migrate.js']
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL:-postgres://route_optimizer:route_optimizer_dev@postgres:5432/route_optimizer}
+    volumes:
+      - ./data:/data:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  worker:
+    build:
+      context: ./backend
+    command: ['node', 'dist/src/worker.js']
+    init: true
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL:-postgres://route_optimizer:route_optimizer_dev@postgres:5432/route_optimizer}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      CACHE_TTL_SECONDS: ${CACHE_TTL_SECONDS:-86400}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD-SHELL', 'kill -0 1']
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    stop_grace_period: 15s
+
+  frontend:
+    build:
+      context: ./frontend
+    restart: unless-stopped
+    environment:
+      API_BASE_URL: ${API_BASE_URL:-/api}
+      CARTO_BASEMAP_KEY: ${CARTO_BASEMAP_KEY:-}
+    ports:
+      - '${FRONTEND_PORT:-4200}:80'
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -q --spider http://127.0.0.1/']
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+volumes:
+  postgres_data:
+  redis_data:

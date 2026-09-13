@@ -1,0 +1,71 @@
+<section class="status-page">
+  <div class="status-intro">
+    <p class="eyebrow">Background operations</p>
+    <h1>Job status</h1>
+    <p>
+      Large routes continue processing outside the browser. Paste a job ID to follow its progress or
+      retrieve the completed route reference.
+    </p>
+  </div>
+
+  <form class="lookup-form" (ngSubmit)="lookup()">
+    <label for="job-id">Job ID</label>
+    <div>
+      <input
+        id="job-id"
+        name="jobId"
+        autocomplete="off"
+        [ngModel]="jobId()"
+        (ngModelChange)="jobId.set($event)"
+        placeholder="b3f1c9…"
+      />
+      <button type="submit" [disabled]="loading()">
+        {{ loading() ? 'Watching…' : 'Check status' }}
+      </button>
+    </div>
+  </form>
+
+  <div class="status-card" aria-live="polite">
+    @if (job(); as currentJob) {
+      <div class="status-badge" [attr.data-status]="currentJob.status">
+        <span></span>{{ currentJob.status }}
+      </div>
+      <p class="label">Job reference</p>
+      <code>{{ currentJob.job_id }}</code>
+
+      <div class="timeline">
+        <div class="complete">
+          <span>1</span>
+          <p>Queued</p>
+        </div>
+        <i></i>
+        <div [class.complete]="currentJob.status !== 'queued'">
+          <span>2</span>
+          <p>Processing</p>
+        </div>
+        <i></i>
+        <div [class.complete]="currentJob.status === 'completed'">
+          <span>3</span>
+          <p>Complete</p>
+        </div>
+      </div>
+
+      @if (currentJob.route_id) {
+        <div class="route-reference">
+          <span>Completed route ID</span>
+          <strong>{{ currentJob.route_id }}</strong>
+        </div>
+      }
+    } @else {
+      <div class="empty-status">
+        <span aria-hidden="true">↻</span>
+        <strong>No job selected</strong>
+        <p>A submitted route’s status will update here automatically.</p>
+      </div>
+    }
+  </div>
+
+  @if (errorMessage()) {
+    <p class="error-message" role="alert">{{ errorMessage() }}</p>
+  }
+</section>

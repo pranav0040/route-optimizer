@@ -1,0 +1,55 @@
+<section class="route-map-card" aria-labelledby="route-map-title">
+  <header class="route-map-header">
+    <div>
+      <p class="route-map-eyebrow">Route visualization</p>
+      <h2 id="route-map-title">Your route, at a glance.</h2>
+      @if (routeResult(); as result) {
+        <p class="savings-summary" data-testid="savings-summary">
+          <strong>{{ formatDistance(distanceSavedM()) }}</strong> and
+          <strong>{{ formatMinutes(durationSavedS()) }}</strong> saved
+          <span>({{ result.improvement_pct.toFixed(1) }}% shorter)</span>
+        </p>
+      } @else {
+        <p class="savings-summary">Click the map to add stops, then optimize to draw your route.</p>
+      }
+    </div>
+
+    <div class="comparison-toggle" role="group" aria-label="Route comparison mode">
+      <button
+        type="button"
+        data-testid="optimized-only"
+        [class.active]="!compareMode()"
+        [attr.aria-pressed]="!compareMode()"
+        [disabled]="!routeResult()"
+        (click)="setCompareMode(false)"
+      >
+        Optimized only
+      </button>
+      <button
+        type="button"
+        data-testid="compare-both"
+        [class.active]="compareMode()"
+        [attr.aria-pressed]="compareMode()"
+        [disabled]="!routeResult()"
+        (click)="setCompareMode(true)"
+      >
+        Compare both
+      </button>
+    </div>
+  </header>
+
+  <div class="map-frame">
+    <div #map class="route-map" data-testid="route-map"></div>
+    <div class="route-legend" aria-label="Map legend">
+      <div><i class="optimized-swatch"></i><span>Optimized</span></div>
+      @if (!routeResult()) {
+        <div data-testid="snap-radius-legend">
+          <i class="snap-radius-swatch"></i><span>250 m snap radius</span>
+        </div>
+      }
+      @if (compareMode()) {
+        <div><i class="naive-swatch"></i><span>Original order</span></div>
+      }
+    </div>
+  </div>
+</section>

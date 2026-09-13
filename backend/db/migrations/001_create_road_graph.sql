@@ -1,0 +1,22 @@
+CREATE EXTENSION IF NOT EXISTS postgis;
+
+CREATE TABLE IF NOT EXISTS nodes (
+  id BIGINT PRIMARY KEY,
+  lat DOUBLE PRECISION NOT NULL CHECK (lat BETWEEN -90 AND 90),
+  lng DOUBLE PRECISION NOT NULL CHECK (lng BETWEEN -180 AND 180),
+  geom GEOGRAPHY(Point, 4326) NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS nodes_geom_gix ON nodes USING GIST (geom);
+
+CREATE TABLE IF NOT EXISTS edges (
+  id BIGSERIAL PRIMARY KEY,
+  from_node_id BIGINT NOT NULL REFERENCES nodes(id) ON DELETE CASCADE,
+  to_node_id BIGINT NOT NULL REFERENCES nodes(id) ON DELETE CASCADE,
+  distance_m DOUBLE PRECISION NOT NULL CHECK (distance_m >= 0),
+  speed_estimate DOUBLE PRECISION NOT NULL CHECK (speed_estimate > 0),
+  road_class TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS edges_from_node_id_idx ON edges (from_node_id);
+CREATE INDEX IF NOT EXISTS edges_to_node_id_idx ON edges (to_node_id);

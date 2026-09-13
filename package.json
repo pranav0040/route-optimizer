@@ -1,0 +1,15 @@
+{
+  "name": "route-optimizer",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@11.16.0",
+  "scripts": {
+    "lint": "pnpm --filter route-optimizer-backend lint && pnpm --filter frontend lint",
+    "format:check": "pnpm --filter route-optimizer-backend format:check && pnpm --filter frontend format:check",
+    "test:backend:unit": "pnpm --filter route-optimizer-backend test:unit",
+    "test:backend:integration": "pnpm --filter route-optimizer-backend test:integration",
+    "test:frontend": "pnpm --filter frontend test:ci",
+    "build": "pnpm --filter route-optimizer-backend build && pnpm --filter frontend build",
+    "load:test": "pnpm --filter route-optimizer-backend load:test"
+  }
+}
