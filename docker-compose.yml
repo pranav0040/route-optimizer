@@ -44,11 +44,19 @@ services:
       PORT: ${PORT:-3000}
       DATABASE_URL: ${DATABASE_URL:-postgres://route_optimizer:route_optimizer_dev@postgres:5432/route_optimizer}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      SNAP_RADIUS_M: ${SNAP_RADIUS_M:-500}
       CACHE_TTL_SECONDS: ${CACHE_TTL_SECONDS:-86400}
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:4200}
       RATE_LIMIT_MAX: ${RATE_LIMIT_MAX:-100}
       TRUST_PROXY_HOPS: ${TRUST_PROXY_HOPS:-1}
       LOG_LEVEL: ${LOG_LEVEL:-info}
+      GEOCODER_URL: ${GEOCODER_URL:-https://nominatim.openstreetmap.org/search}
+      GEOCODER_REVERSE_URL: ${GEOCODER_REVERSE_URL:-https://nominatim.openstreetmap.org/reverse}
+      GEOCODER_SUGGESTIONS_URL: ${GEOCODER_SUGGESTIONS_URL:-https://photon.komoot.io/api}
+      GEOCODER_USER_AGENT: ${GEOCODER_USER_AGENT:-RouteOptimizer/0.1 (local route-planning application)}
+      GEOCODER_COUNTRY_CODES: ${GEOCODER_COUNTRY_CODES:-in}
+      GEOCODER_VIEWBOX: ${GEOCODER_VIEWBOX:-77.5285614,13.0391168,77.7420454,12.8467491}
+      GEOCODER_SUGGESTIONS_BBOX: ${GEOCODER_SUGGESTIONS_BBOX:-77.5285614,12.8467491,77.7420454,13.0391168}
     ports:
       - '${PORT:-3000}:${PORT:-3000}'
     depends_on:
@@ -93,6 +101,7 @@ services:
       NODE_ENV: production
       DATABASE_URL: ${DATABASE_URL:-postgres://route_optimizer:route_optimizer_dev@postgres:5432/route_optimizer}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      SNAP_RADIUS_M: ${SNAP_RADIUS_M:-500}
       CACHE_TTL_SECONDS: ${CACHE_TTL_SECONDS:-86400}
       LOG_LEVEL: ${LOG_LEVEL:-info}
     depends_on:

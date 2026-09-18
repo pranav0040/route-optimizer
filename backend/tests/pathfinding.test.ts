@@ -4,6 +4,24 @@ import { aStarShortestPath, dijkstraShortestPath } from '../src/algorithms/pathf
 import { type GraphEdge, type GraphNode, RoadGraph } from '../src/graph/road-graph.js';
 
 describe('shortest path algorithms', () => {
+  it('identifies the largest strongly connected component as routable', () => {
+    const graph = new RoadGraph(
+      [node(1, 0, 0), node(2, 0, 1), node(3, 0, 2), node(4, 1, 0), node(5, 1, 1)],
+      [
+        edge(1, 2, 1),
+        edge(2, 1, 1),
+        edge(2, 3, 1),
+        edge(3, 2, 1),
+        edge(4, 5, 1),
+        edge(5, 4, 1)
+      ]
+    );
+
+    expect(graph.routableNodeCount).toBe(3);
+    expect([1, 2, 3].every((nodeId) => graph.isRoutableNode(nodeId))).toBe(true);
+    expect([4, 5].every((nodeId) => graph.isRoutableNode(nodeId))).toBe(false);
+  });
+
   it.each([
     ['dijkstra', dijkstraShortestPath],
     ['astar', aStarShortestPath]

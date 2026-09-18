@@ -4,10 +4,13 @@ import { EMPTY, expand, filter, switchMap, take, timer } from 'rxjs';
 
 import type {
   JobStatusResponse,
+  GeocodeResponse,
+  GeocodeSuggestionsResponse,
   OptimizeRequest,
   OptimizeResponse,
   PointToPointRequest,
   PointToPointResponse,
+  RoutingCoverageResponse,
 } from '../models/api.models';
 
 export const API_BASE_URL = new InjectionToken<string>('API_BASE_URL', {
@@ -31,6 +34,28 @@ export class ApiService {
 
   pointToPoint(request: PointToPointRequest) {
     return this.http.post<PointToPointResponse>(`${this.baseUrl}/routes/point-to-point`, request);
+  }
+
+  getRoutingCoverage() {
+    return this.http.get<RoutingCoverageResponse>(`${this.baseUrl}/routes/coverage`);
+  }
+
+  geocodeAddress(address: string) {
+    return this.http.get<GeocodeResponse>(`${this.baseUrl}/geocoding/search`, {
+      params: { address },
+    });
+  }
+
+  reverseGeocode(lat: number, lng: number) {
+    return this.http.get<GeocodeResponse>(`${this.baseUrl}/geocoding/reverse`, {
+      params: { lat, lng },
+    });
+  }
+
+  searchAddressSuggestions(address: string) {
+    return this.http.get<GeocodeSuggestionsResponse>(`${this.baseUrl}/geocoding/suggestions`, {
+      params: { address },
+    });
   }
 
   optimize(request: OptimizeRequest) {

@@ -10,7 +10,9 @@
           <span>({{ result.improvement_pct.toFixed(1) }}% shorter)</span>
         </p>
       } @else {
-        <p class="savings-summary">Click the map to add stops, then optimize to draw your route.</p>
+        <p class="savings-summary">
+          Click inside the outlined area to add stops, then optimize to draw your route.
+        </p>
       }
     </div>
 
@@ -41,15 +43,31 @@
   <div class="map-frame">
     <div #map class="route-map" data-testid="route-map"></div>
     <div class="route-legend" aria-label="Map legend">
+      <div data-testid="search-boundary-legend">
+        <i class="boundary-swatch"></i><span>Routable graph bounds</span>
+      </div>
       <div><i class="optimized-swatch"></i><span>Optimized</span></div>
       @if (!routeResult()) {
         <div data-testid="snap-radius-legend">
-          <i class="snap-radius-swatch"></i><span>250 m snap radius</span>
+          <i class="snap-radius-swatch"></i><span>{{ snapRadiusM() }} m snap radius</span>
         </div>
       }
       @if (compareMode()) {
         <div><i class="naive-swatch"></i><span>Original order</span></div>
       }
     </div>
+    @if (mapPointMessage(); as message) {
+      <p
+        class="map-point-status"
+        [class.loading]="resolvingMapPoint()"
+        data-testid="map-point-status"
+        aria-live="polite"
+      >
+        @if (resolvingMapPoint()) {
+          <span aria-hidden="true"></span>
+        }
+        {{ message }}
+      </p>
+    }
   </div>
 </section>

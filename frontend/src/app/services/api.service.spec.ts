@@ -57,6 +57,88 @@ describe('ApiService', () => {
     expect(actual).toEqual(expected);
   });
 
+  it('loads the routable road-network coverage', () => {
+    const expected = {
+      bounds: { south: 12.86, west: 77.53, north: 13.03, east: 77.73 },
+      snap_radius_m: 500,
+      routable_node_count: 148_000,
+    };
+
+    service.getRoutingCoverage().subscribe((response) => expect(response).toEqual(expected));
+    const request = http.expectOne('/api/routes/coverage');
+
+    expect(request.request.method).toBe('GET');
+    request.flush(expected);
+  });
+
+  it('looks up an address with encoded query parameters', () => {
+    const expected = {
+      lat: 12.976347,
+      lng: 77.592928,
+      display_name: 'Cubbon Park, Bengaluru, Karnataka, India',
+      cached: false,
+    };
+
+    service.geocodeAddress('Cubbon Park, Bengaluru').subscribe((response) => {
+      expect(response).toEqual(expected);
+    });
+    const request = http.expectOne(
+      (candidate) =>
+        candidate.url === '/api/geocoding/search' &&
+        candidate.params.get('address') === 'Cubbon Park, Bengaluru',
+    );
+
+    expect(request.request.method).toBe('GET');
+    request.flush(expected);
+  });
+
+  it('requests selectable address suggestions', () => {
+    const expected = {
+      suggestions: [
+        {
+          lat: 12.976347,
+          lng: 77.592928,
+          display_name: 'Cubbon Park, Bengaluru, Karnataka, India',
+          cached: false,
+        },
+      ],
+    };
+
+    service.searchAddressSuggestions('Cubbon Park').subscribe((response) => {
+      expect(response).toEqual(expected);
+    });
+    const request = http.expectOne(
+      (candidate) =>
+        candidate.url === '/api/geocoding/suggestions' &&
+        candidate.params.get('address') === 'Cubbon Park',
+    );
+
+    expect(request.request.method).toBe('GET');
+    request.flush(expected);
+  });
+
+  it('reverse geocodes a selected map coordinate', () => {
+    const expected = {
+      lat: 12.976347,
+      lng: 77.592928,
+      display_name: 'Cubbon Park, Bengaluru, Karnataka, India',
+      cached: false,
+    };
+
+    service.reverseGeocode(12.976347, 77.592928).subscribe((response) => {
+      expect(response).toEqual(expected);
+    });
+    const request = http.expectOne(
+      (candidate) =>
+        candidate.url === '/api/geocoding/reverse' &&
+        candidate.params.get('lat') === '12.976347' &&
+        candidate.params.get('lng') === '77.592928',
+    );
+
+    expect(request.request.method).toBe('GET');
+    request.flush(expected);
+  });
+
   it('posts a typed optimization request', () => {
     const body: OptimizeRequest = {
       origin: { lat: 12.9716, lng: 77.5946 },

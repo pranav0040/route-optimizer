@@ -9,6 +9,7 @@ import {
   RedisRouteResponseCache
 } from './cache/route-cache.js';
 import { PostgresJobRepository } from './db/job-repository.js';
+import { NominatimGeocoder } from './geocoding/geocoder.js';
 import { initializeRoadGraph } from './graph/road-graph.js';
 import { BullMqOptimizationJobQueue } from './jobs/optimization-queue.js';
 import { RedisJobStatusPublisher, RedisJobStatusSubscriber } from './jobs/status-events.js';
@@ -23,17 +24,25 @@ async function main() {
   const cacheClient = createRedisClient();
   const cache = new RedisRouteResponseCache(cacheClient, getCacheTtlSeconds());
   const repository = new PostgresJobRepository();
+  const geocoder = new NominatimGeocoder({ cache });
   const publisher = new RedisJobStatusPublisher();
   const subscriber = new RedisJobStatusSubscriber();
   const jobQueue = new BullMqOptimizationJobQueue(repository, publisher);
-  const app = createApp({ graph, cache, jobQueue, jobRepository: repository });
+  const app = createApp({ graph, cache, jobQueue, jobRepository: repository, geocoder });
   const server = createServer(app);
 
   const webSocketServer = await attachJobStatusWebSocket(server, repository, subscriber);
 
   server.listen(port, host, () => {
     apiLogger.info(
-      { host, port, graphNodes: graph.nodeCount, graphEdges: graph.edgeCount },
+      {
+        host,
+        port,
+        graphNodes: graph.nodeCount,
+        graphEdges: graph.edgeCount,
+        routableGraphNodes: graph.routableNodeCount,
+        routableBounds: graph.routableBounds
+      },
       'API listening'
     );
   });

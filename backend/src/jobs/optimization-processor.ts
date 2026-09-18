@@ -30,7 +30,12 @@ export async function processOptimizationJob(
   data: OptimizationJobData,
   dependencies: OptimizationProcessorDependencies
 ) {
-  const snapCoordinate = dependencies.snapCoordinate ?? ((lat, lng) => findNearestNode(lat, lng));
+  const snapCoordinate =
+    dependencies.snapCoordinate ??
+    ((lat, lng) =>
+      findNearestNode(lat, lng, {
+        acceptNode: (nodeId) => dependencies.graph.isRoutableNode(nodeId)
+      }));
   const optimizeRoute = dependencies.optimizeRoute ?? optimizeMultiStopRoute;
 
   await dependencies.repository.markProcessing(jobId);

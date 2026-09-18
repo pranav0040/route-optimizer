@@ -3,23 +3,23 @@
 }
 
 .builder-page {
-  width: min(1240px, calc(100% - 3rem));
+  width: min(1440px, calc(100% - 3rem));
   margin: 0 auto;
-  padding: 5.5rem 0 6rem;
+  padding: 3.75rem 0 5rem;
 }
 
 .page-heading {
   display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.7fr);
+  grid-template-columns: minmax(500px, 0.95fr) minmax(520px, 1.05fr);
   align-items: end;
-  gap: 4rem;
-  margin-bottom: 4.5rem;
+  gap: 1rem;
+  margin-bottom: 3rem;
 }
 
 .eyebrow,
 .result-kicker {
   margin: 0 0 1rem;
-  color: #d15336;
+  color: var(--color-muted);
   font-size: 0.72rem;
   font-weight: 800;
   letter-spacing: 0.16em;
@@ -28,42 +28,50 @@
 
 h1 {
   margin: 0;
-  color: #132720;
+  color: var(--color-ink);
   font-family: Georgia, 'Times New Roman', serif;
-  font-size: clamp(3.1rem, 7vw, 6.5rem);
+  font-size: clamp(3.1rem, 6vw, 5.5rem);
   font-weight: 400;
   line-height: 0.87;
   letter-spacing: -0.055em;
 }
 
 h1 em {
-  color: #d15336;
+  color: var(--color-muted);
   font-weight: 400;
 }
 
 .heading-copy {
-  max-width: 440px;
+  max-width: 520px;
   margin: 0 0 0.4rem;
-  color: #627069;
+  color: var(--color-muted);
   font-size: 1rem;
   line-height: 1.75;
 }
 
 .workspace-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(330px, 0.8fr);
+  grid-template-columns: minmax(500px, 0.95fr) minmax(520px, 1.05fr);
   align-items: start;
-  gap: 1.5rem;
+  gap: 1rem;
 }
 
 .route-form,
 .result-panel {
-  border: 1px solid #d9ddd4;
-  background: #fffef9;
+  border: 1px solid var(--color-line);
+  background: var(--color-surface);
 }
 
 .route-form {
-  padding: clamp(1.5rem, 4vw, 3rem);
+  padding: clamp(1.5rem, 3vw, 2.5rem);
+}
+
+.workspace-sidebar {
+  position: sticky;
+  top: 6.5rem;
+  display: grid;
+  min-width: 0;
+  gap: 1rem;
 }
 
 .section-label {
@@ -73,8 +81,9 @@ h1 em {
 }
 
 .section-label > span {
+  flex: 0 0 1rem;
   padding-top: 0.25rem;
-  color: #d15336;
+  color: var(--color-muted);
   font-family: Georgia, serif;
   font-size: 0.8rem;
   font-style: italic;
@@ -82,7 +91,7 @@ h1 em {
 
 h2 {
   margin: 0;
-  color: #132720;
+  color: var(--color-ink);
   font-size: 1rem;
   letter-spacing: -0.01em;
 }
@@ -90,7 +99,7 @@ h2 {
 .section-label p,
 .submit-row p {
   margin: 0.35rem 0 0;
-  color: #879088;
+  color: var(--color-muted);
   font-size: 0.78rem;
 }
 
@@ -105,13 +114,145 @@ fieldset {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.75rem;
-  margin: 1.5rem 0 2.75rem 2rem;
+  margin: 1rem 0 0;
+}
+
+.location-input {
+  margin: 1.5rem 0 2.75rem;
+}
+
+.input-mode-toggle {
+  display: inline-flex;
+  border: 1px solid var(--color-line);
+  background: var(--color-surface-subtle);
+  padding: 0.2rem;
+}
+
+.input-mode-toggle button {
+  height: 2rem;
+  border: 0;
+  background: transparent;
+  color: var(--color-muted);
+  padding: 0 0.75rem;
+  font-size: 0.7rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.input-mode-toggle button.active {
+  background: var(--color-ink);
+  color: var(--color-surface);
+}
+
+.input-mode-toggle.compact {
+  flex-shrink: 0;
+}
+
+.input-mode-toggle.compact button {
+  height: 1.7rem;
+  padding: 0 0.55rem;
+  font-size: 0.64rem;
+}
+
+.address-field {
+  display: block;
+  margin-top: 1rem;
+}
+
+.address-search-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.6rem;
+  margin-top: 1rem;
+}
+
+.address-search-row .address-field {
+  flex: 1;
+  margin-top: 0;
+}
+
+.search-address-button {
+  height: 3rem;
+  border: 1px solid var(--color-ink);
+  background: var(--color-ink);
+  color: white;
+  padding: 0 1rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.address-suggestions {
+  display: grid;
+  overflow: hidden;
+  margin: 0.5rem 0 0;
+  border: 1px solid var(--color-line);
+  background: var(--color-surface);
+  padding: 0;
+  list-style: none;
+}
+
+.address-suggestions li + li {
+  border-top: 1px solid var(--color-line);
+}
+
+.address-suggestions button {
+  width: 100%;
+  border: 0;
+  background: var(--color-surface);
+  color: var(--color-ink);
+  padding: 0.7rem 0.8rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.address-suggestions button:hover,
+.address-suggestions button:focus-visible {
+  background: var(--color-surface-subtle);
+}
+
+.address-suggestions span,
+.address-suggestions small {
+  display: block;
+}
+
+.address-suggestions span {
+  font-size: 0.76rem;
+  line-height: 1.4;
+}
+
+.address-suggestions small {
+  margin-top: 0.2rem;
+  color: var(--color-muted);
+  font-size: 0.64rem;
+}
+
+.address-search-error {
+  margin: 0.5rem 0 0;
+  color: var(--color-danger);
+  font-size: 0.72rem;
+}
+
+.address-search-hint {
+  margin: 0.4rem 0 0;
+  color: var(--color-muted);
+  font-size: 0.68rem;
+}
+
+.resolved-address {
+  overflow: hidden;
+  margin: 0.55rem 0 0;
+  color: var(--color-muted);
+  font-size: 0.72rem;
+  line-height: 1.45;
+  text-overflow: ellipsis;
 }
 
 label > span:not(.sr-only) {
   display: block;
   margin: 0 0 0.5rem;
-  color: #66736c;
+  color: var(--color-muted);
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.05em;
@@ -121,11 +262,11 @@ label > span:not(.sr-only) {
 input {
   width: 100%;
   height: 3rem;
-  border: 1px solid #d9ddd4;
+  border: 1px solid var(--color-line);
   border-radius: 0;
   outline: none;
-  background: #faf9f3;
-  color: #132720;
+  background: var(--color-surface);
+  color: var(--color-ink);
   padding: 0 0.9rem;
   font: inherit;
   transition:
@@ -134,8 +275,8 @@ input {
 }
 
 input:focus {
-  border-color: #547365;
-  box-shadow: 0 0 0 3px rgb(84 115 101 / 12%);
+  border-color: var(--color-ink);
+  box-shadow: 0 0 0 3px rgb(23 23 23 / 8%);
 }
 
 .stops-header {
@@ -145,7 +286,7 @@ input:focus {
   gap: 1rem;
   margin-bottom: 1.25rem;
   padding-top: 2rem;
-  border-top: 1px solid #ecece4;
+  border-top: 1px solid var(--color-line);
 }
 
 button,
@@ -156,7 +297,7 @@ a {
 .add-button {
   border: 0;
   background: transparent;
-  color: #355d4c;
+  color: var(--color-ink);
   font-size: 0.8rem;
   font-weight: 800;
   cursor: pointer;
@@ -164,7 +305,7 @@ a {
 
 .add-button span {
   margin-right: 0.25rem;
-  color: #d15336;
+  color: var(--color-ink);
   font-size: 1.05rem;
 }
 
@@ -175,21 +316,64 @@ button:disabled {
 
 .stop-list {
   display: grid;
-  gap: 0.6rem;
+  gap: 0.75rem;
 }
 
 .stop-row {
   display: grid;
-  grid-template-columns: 2rem 1fr 1fr 2.5rem;
-  align-items: center;
-  gap: 0.65rem;
+  grid-template-columns: 2rem minmax(0, 1fr) 2.5rem;
+  align-items: start;
+  gap: 0.75rem;
+  border: 1px solid var(--color-line);
+  background: var(--color-surface);
+  padding: 0.85rem 0.65rem;
 }
 
 .stop-index {
-  color: #a4aaa4;
+  padding-top: 0.45rem;
+  color: var(--color-muted);
   font-family: Georgia, serif;
   font-size: 0.75rem;
   font-style: italic;
+}
+
+.stop-fields {
+  min-width: 0;
+}
+
+.stop-field-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.65rem;
+}
+
+.stop-field-header > span {
+  color: var(--color-muted);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.stop-coordinate-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.65rem;
+}
+
+.stop-fields label > span:not(.sr-only) {
+  margin-bottom: 0.35rem;
+  font-size: 0.64rem;
+}
+
+.stop-fields .address-field {
+  margin-top: 0;
+}
+
+.stop-fields .address-search-row {
+  margin-top: 0;
 }
 
 .remove-button {
@@ -197,21 +381,33 @@ button:disabled {
   height: 3rem;
   border: 1px solid transparent;
   background: transparent;
-  color: #a36658;
+  color: var(--color-muted);
   font-size: 1.3rem;
   cursor: pointer;
 }
 
 .remove-button:hover {
-  border-color: #ead8d1;
-  background: #fff8f5;
+  border-color: var(--color-line-strong);
+  background: var(--color-surface-subtle);
+}
+
+.geocoding-credit {
+  margin: 1rem 0 0;
+  color: var(--color-muted);
+  font-size: 0.68rem;
+  line-height: 1.5;
+}
+
+.geocoding-credit a {
+  color: var(--color-ink);
+  font-weight: 700;
 }
 
 .error-message {
   margin: 1.25rem 0 0;
-  border-left: 3px solid #c8462b;
-  background: #fff3ed;
-  color: #8e321f;
+  border-left: 3px solid var(--color-danger);
+  background: #fff6f5;
+  color: var(--color-danger);
   padding: 0.8rem 1rem;
   font-size: 0.85rem;
 }
@@ -221,15 +417,15 @@ button:disabled {
   align-items: center;
   gap: 1rem;
   margin-top: 2rem;
-  padding: 1.5rem 0 0 2rem;
-  border-top: 1px solid #ecece4;
+  padding: 1.5rem 0 0;
+  border-top: 1px solid var(--color-line);
 }
 
 .submit-button {
   min-width: 215px;
   height: 3.25rem;
   border: 0;
-  background: #d15336;
+  background: var(--color-ink);
   color: white;
   padding: 0 1.3rem;
   font-size: 0.82rem;
@@ -254,19 +450,17 @@ button:disabled {
 }
 
 .result-panel {
-  position: sticky;
-  top: 6.5rem;
-  min-height: 470px;
-  background: #193229;
-  color: #f7f4e9;
+  min-height: 250px;
+  background: var(--color-surface);
+  color: var(--color-ink);
 }
 
 .panel-topline {
   display: flex;
   justify-content: space-between;
-  border-bottom: 1px solid rgb(255 255 255 / 13%);
+  border-bottom: 1px solid var(--color-line);
   padding: 1rem 1.25rem;
-  color: #b7c1ba;
+  color: var(--color-muted);
   font-size: 0.67rem;
   font-weight: 800;
   letter-spacing: 0.13em;
@@ -277,19 +471,19 @@ button:disabled {
   width: 0.5rem;
   height: 0.5rem;
   border-radius: 50%;
-  background: #708179;
+  background: var(--color-line-strong);
 }
 
 .status-dot.active {
-  background: #e27858;
-  box-shadow: 0 0 0 5px rgb(226 120 88 / 14%);
+  background: var(--color-ink);
+  box-shadow: 0 0 0 5px rgb(23 23 23 / 8%);
 }
 
 .empty-state,
 .result-content,
 .job-content {
   display: flex;
-  min-height: 410px;
+  min-height: 190px;
   flex-direction: column;
   justify-content: center;
   padding: clamp(2rem, 5vw, 3.25rem);
@@ -307,7 +501,7 @@ button:disabled {
 .empty-state > span,
 .job-content > p {
   margin: 0.8rem 0 0;
-  color: #aebbb4;
+  color: var(--color-muted);
   font-size: 0.85rem;
   line-height: 1.6;
 }
@@ -323,7 +517,7 @@ button:disabled {
   position: relative;
   width: 0.7rem;
   height: 0.7rem;
-  border: 2px solid #e27858;
+  border: 2px solid var(--color-ink);
   border-radius: 50%;
 }
 
@@ -332,7 +526,7 @@ button:disabled {
   top: 50%;
   left: 0.9rem;
   width: 1.15rem;
-  border-top: 1px dashed #71847a;
+  border-top: 1px solid var(--color-line-strong);
   content: '';
 }
 
@@ -344,7 +538,7 @@ button:disabled {
 }
 
 .result-content > span {
-  color: #aebbb4;
+  color: var(--color-muted);
   font-size: 0.85rem;
 }
 
@@ -356,14 +550,14 @@ button:disabled {
 }
 
 .metric-grid div {
-  border: 1px solid rgb(255 255 255 / 13%);
+  border: 1px solid var(--color-line);
   padding: 1rem;
 }
 
 .metric-grid span,
 .order-block > span {
   display: block;
-  color: #93a39a;
+  color: var(--color-muted);
   font-size: 0.67rem;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -373,7 +567,7 @@ button:disabled {
 .metric-grid b {
   display: block;
   margin-top: 0.45rem;
-  color: #f7f4e9;
+  color: var(--color-ink);
   font-size: 1.05rem;
 }
 
@@ -381,11 +575,27 @@ button:disabled {
   margin-top: 1.75rem;
 }
 
-.order-block p {
-  display: flex;
-  flex-wrap: wrap;
+.order-help {
+  margin: 0.35rem 0 0;
+  color: var(--color-muted);
+  font-size: 0.72rem;
+}
+
+.order-block ol {
+  display: grid;
+  margin: 0.8rem 0 0;
+  border-top: 1px solid var(--color-line);
+  padding: 0;
+  list-style: none;
+}
+
+.order-block li {
+  display: grid;
+  grid-template-columns: 1.75rem minmax(0, 1fr);
   align-items: center;
-  gap: 0.45rem;
+  gap: 0.7rem;
+  border-bottom: 1px solid var(--color-line);
+  padding: 0.65rem 0;
 }
 
 .order-block b {
@@ -394,14 +604,31 @@ button:disabled {
   height: 1.75rem;
   place-items: center;
   border-radius: 50%;
-  background: #e27858;
-  color: #193229;
+  background: var(--color-ink);
+  color: var(--color-surface);
   font-size: 0.75rem;
 }
 
-.order-block i {
-  color: #789087;
-  font-style: normal;
+.order-block li span,
+.order-block li strong,
+.order-block li small {
+  display: block;
+  min-width: 0;
+}
+
+.order-block li strong {
+  color: var(--color-ink);
+  font-size: 0.75rem;
+}
+
+.order-block li small {
+  overflow: hidden;
+  margin-top: 0.15rem;
+  color: var(--color-muted);
+  font-size: 0.68rem;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .job-orbit {
@@ -410,7 +637,7 @@ button:disabled {
   height: 4rem;
   margin-bottom: 2rem;
   place-items: center;
-  border: 1px solid #587066;
+  border: 1px solid var(--color-line-strong);
   border-radius: 50%;
 }
 
@@ -418,8 +645,8 @@ button:disabled {
   width: 0.7rem;
   height: 0.7rem;
   border-radius: 50%;
-  background: #e27858;
-  box-shadow: 0 0 0 8px rgb(226 120 88 / 13%);
+  background: var(--color-ink);
+  box-shadow: 0 0 0 8px rgb(23 23 23 / 7%);
 }
 
 .job-content strong {
@@ -429,7 +656,7 @@ button:disabled {
 .job-id {
   overflow: hidden;
   margin-top: 0.8rem;
-  color: #85988e;
+  color: var(--color-muted);
   font-family: monospace;
   font-size: 0.72rem;
   text-overflow: ellipsis;
@@ -438,7 +665,7 @@ button:disabled {
 .job-content a {
   align-self: flex-start;
   margin-top: 1.6rem;
-  color: #efad94;
+  color: var(--color-ink);
   font-size: 0.8rem;
   font-weight: 800;
   text-decoration: none;
@@ -459,7 +686,7 @@ button:disabled {
   }
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1100px) {
   .page-heading,
   .workspace-grid {
     grid-template-columns: 1fr;
@@ -469,15 +696,18 @@ button:disabled {
     gap: 1.75rem;
   }
 
-  .result-panel {
+  .workspace-sidebar {
     position: static;
-    min-height: 360px;
+  }
+
+  .result-panel {
+    min-height: 250px;
   }
 
   .empty-state,
   .result-content,
   .job-content {
-    min-height: 300px;
+    min-height: 190px;
   }
 }
 
@@ -489,25 +719,38 @@ button:disabled {
 
   .coordinate-grid {
     grid-template-columns: 1fr;
+  }
+
+  .address-search-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .location-input {
     margin-left: 0;
   }
 
   .stop-row {
-    grid-template-columns: 1.8rem 1fr 2.5rem;
+    grid-template-columns: 1.5rem minmax(0, 1fr) 2rem;
   }
 
-  .stop-row label:nth-of-type(2) {
-    grid-column: 2;
+  .stop-field-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.45rem;
   }
 
-  .stop-row .remove-button {
-    grid-column: 3;
-    grid-row: 1 / 3;
+  .stop-coordinate-grid {
+    grid-template-columns: 1fr;
   }
 
   .submit-row {
     align-items: stretch;
     flex-direction: column;
     padding-left: 0;
+  }
+
+  .geocoding-credit {
+    margin-left: 0;
   }
 }

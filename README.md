@@ -14,7 +14,8 @@ production-style engineering practices over global coverage or live traffic.
 
 ```mermaid
 flowchart LR
-  browser[Angular + Leaflet client] -->|REST / WebSocket| api[Express API]
+browser[Angular + Leaflet client] -->|REST / WebSocket| api[Express API]
+  api -->|cached, throttled address lookup| geocoder[Configurable Nominatim service]
   api -->|snap coordinates / persist jobs| db[(PostgreSQL + PostGIS)]
   api -->|Dijkstra / A* / 2-opt| graph[In-memory road graph]
   api -->|cache / enqueue| redis[(Redis)]
@@ -26,8 +27,10 @@ flowchart LR
 ```
 
 PostGIS stores OSM nodes and edges and performs indexed nearest-node searches within the configured
-250 m snap radius. API and worker processes load the graph into adjacency lists at startup. The API
-handles validation, rate limiting, cache lookup, synchronous computation, polling, and WebSocket
+500 m snap radius. API and worker processes load the graph into adjacency lists at startup and prefer
+the largest strongly connected road component when snapping coordinates. The map boundary is loaded
+from that routable component at runtime. The API handles validation, rate limiting, cache lookup,
+synchronous computation, polling, and WebSocket
 connections. Requests above 15 stops are persisted and queued in Redis; the worker computes them,
 stores the result in PostgreSQL, and publishes lifecycle events back to the API. Pino writes JSON
 request/response and job lifecycle logs.
@@ -63,6 +66,10 @@ development.
 
    `CARTO_BASEMAP_KEY` is optional. Core routing has no paid API dependency, and the default CARTO
    Voyager tiles retain OpenStreetMap/CARTO attribution and provide higher-contrast road context.
+   Address entry uses configurable geocoding endpoints. Exact and reverse lookup default to
+   OpenStreetMap Nominatim, while prefix suggestions use Photon. All lookups are restricted to the loaded Bengaluru
+   bounds, cached in Redis, identified with `GEOCODER_USER_AGENT`, and serialized to keep external
+   usage modest.
 
 2. Install workspace dependencies when running checks or services on the host.
 
@@ -111,6 +118,21 @@ pnpm --filter frontend start
 ```
 
 ## API Examples
+
+### Address search
+
+```sh
+curl "http://localhost:3000/api/geocoding/search?address=Cubbon%20Park%2C%20Bengaluru"
+```
+
+The route builder can use an address or decimal latitude/longitude independently for the starting
+point and every stop. Suggestions appear automatically after three characters; press Enter or
+choose **Find address** to search immediately. Selecting a
+match immediately places the origin or stop on the map. Clicking inside the map boundary reverse
+geocodes the point and adds its address to the delivery-stop list. Address matches are converted to
+coordinates before the existing route API runs. The default geocoder bounds match the Bengaluru
+road extract; configure `GEOCODER_VIEWBOX` and `GEOCODER_COUNTRY_CODES` when loading a different
+metro graph.
 
 ### Point-to-point route
 
@@ -245,13 +267,13 @@ Every PRD Section 6 P0 feature is implemented and covered by code/tests:
 
 | ID | Feature | Implementation evidence |
 |---|---|---|
-| F1 | Point-to-point routing | Validated REST endpoint, 250 m PostGIS snapping, distance, duration, and road geometry |
+| F1 | Point-to-point routing | Validated REST endpoint, 500 m PostGIS snapping, distance, duration, and road geometry |
 | F2 | Multi-stop optimization | 2-25 stops, ordered full geometry, totals, naive comparison, stop-limit validation |
 | F3 | Self-implemented pathfinding | Custom Dijkstra, A*, binary min-heap, disconnected and zero-distance tests |
 | F4 | TSP heuristic | Nearest-neighbor construction, request-scoped pair cache, 500 ms-bounded 2-opt, brute-force comparison |
 | F5 | Async job processing | BullMQ worker above 15 stops, persistence, polling, WebSocket updates, two retries, failure reasons |
 | F6 | Response caching | Redis, normalized order-sensitive SHA-256 keys, 24-hour default TTL, visible cache-hit flag, fail-open behavior |
-| F7 | Interactive map UI | Coordinate and map-click entry, add/remove controls, loading/job states, Leaflet route rendering and summaries |
+| F7 | Interactive map UI | Address, coordinate, and map-click entry, add/remove controls, loading/job states, Leaflet route rendering and summaries |
 
 NFR-9 through NFR-12 are likewise represented: enforced algorithm coverage, lint/format CI gates,
 single-command Compose startup with health-based ordering, and structured request/job lifecycle

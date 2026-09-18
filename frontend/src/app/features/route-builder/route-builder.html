@@ -16,35 +16,106 @@
         <span>01</span>
         <div>
           <h2>Starting point</h2>
-          <p>Enter coordinates in decimal degrees.</p>
+          <p>Use a street address or enter decimal coordinates.</p>
         </div>
       </div>
 
-      <fieldset class="coordinate-grid">
-        <legend class="sr-only">Origin coordinates</legend>
-        <label>
-          <span>Latitude</span>
-          <input
-            name="originLat"
-            inputmode="decimal"
-            autocomplete="off"
-            [ngModel]="origin().lat"
-            (ngModelChange)="updateOrigin('lat', $event)"
-            placeholder="12.9716"
-          />
-        </label>
-        <label>
-          <span>Longitude</span>
-          <input
-            name="originLng"
-            inputmode="decimal"
-            autocomplete="off"
-            [ngModel]="origin().lng"
-            (ngModelChange)="updateOrigin('lng', $event)"
-            placeholder="77.5946"
-          />
-        </label>
-      </fieldset>
+      <div class="location-input origin-input">
+        <div class="input-mode-toggle" role="group" aria-label="Starting point input method">
+          <button
+            type="button"
+            data-testid="origin-address-mode"
+            [class.active]="origin().inputMode === 'address'"
+            [attr.aria-pressed]="origin().inputMode === 'address'"
+            (click)="setOriginInputMode('address')"
+          >
+            Address
+          </button>
+          <button
+            type="button"
+            data-testid="origin-coordinate-mode"
+            [class.active]="origin().inputMode === 'coordinates'"
+            [attr.aria-pressed]="origin().inputMode === 'coordinates'"
+            (click)="setOriginInputMode('coordinates')"
+          >
+            Coordinates
+          </button>
+        </div>
+
+        @if (origin().inputMode === 'address') {
+          <div class="address-search-row">
+            <label class="address-field">
+              <span>Starting address</span>
+              <input
+                name="originAddress"
+                data-testid="origin-address"
+                autocomplete="street-address"
+                [ngModel]="origin().address"
+                (ngModelChange)="updateOriginAddress($event)"
+                (keydown.enter)="searchOriginAddress(); $event.preventDefault()"
+                placeholder="e.g. Cubbon Park, Bengaluru"
+                aria-describedby="origin-search-hint"
+              />
+            </label>
+            <button
+              class="search-address-button"
+              type="button"
+              data-testid="search-origin-address"
+              [disabled]="searchingOrigin()"
+              (click)="searchOriginAddress()"
+            >
+              {{ searchingOrigin() ? 'Searching…' : 'Find address' }}
+            </button>
+          </div>
+          <p id="origin-search-hint" class="address-search-hint">
+            Suggestions appear automatically after 3 characters.
+          </p>
+          @if (originSuggestions().length > 0) {
+            <ul class="address-suggestions" data-testid="origin-suggestions">
+              @for (suggestion of originSuggestions(); track suggestion.display_name) {
+                <li>
+                  <button type="button" (click)="selectOriginSuggestion(suggestion)">
+                    <span>{{ suggestion.display_name }}</span>
+                    <small>{{ suggestion.lat.toFixed(5) }}, {{ suggestion.lng.toFixed(5) }}</small>
+                  </button>
+                </li>
+              }
+            </ul>
+          }
+          @if (originSearchError()) {
+            <p class="address-search-error" role="alert">{{ originSearchError() }}</p>
+          }
+          @if (origin().resolvedAddress) {
+            <p class="resolved-address">Matched: {{ origin().resolvedAddress }}</p>
+          }
+        } @else {
+          <fieldset class="coordinate-grid">
+            <legend class="sr-only">Origin coordinates</legend>
+            <label>
+              <span>Latitude</span>
+              <input
+                name="originLat"
+                inputmode="decimal"
+                autocomplete="off"
+                [ngModel]="origin().lat"
+                (ngModelChange)="updateOriginCoordinate('lat', $event)"
+                placeholder="12.9716"
+              />
+            </label>
+            <label>
+              <span>Longitude</span>
+              <input
+                name="originLng"
+                inputmode="decimal"
+                autocomplete="off"
+                [ngModel]="origin().lng"
+                (ngModelChange)="updateOriginCoordinate('lng', $event)"
+                placeholder="77.5946"
+              />
+            </label>
+          </fieldset>
+        }
+      </div>
 
       <div class="stops-header">
         <div class="section-label">
@@ -71,28 +142,113 @@
             <div class="stop-index" aria-hidden="true">
               {{ (index + 1).toString().padStart(2, '0') }}
             </div>
-            <label>
-              <span class="sr-only">Stop {{ index + 1 }} latitude</span>
-              <input
-                [name]="'stopLat' + stop.id"
-                inputmode="decimal"
-                autocomplete="off"
-                [ngModel]="stop.lat"
-                (ngModelChange)="updateStop(stop.id, 'lat', $event)"
-                placeholder="Latitude"
-              />
-            </label>
-            <label>
-              <span class="sr-only">Stop {{ index + 1 }} longitude</span>
-              <input
-                [name]="'stopLng' + stop.id"
-                inputmode="decimal"
-                autocomplete="off"
-                [ngModel]="stop.lng"
-                (ngModelChange)="updateStop(stop.id, 'lng', $event)"
-                placeholder="Longitude"
-              />
-            </label>
+            <div class="stop-fields">
+              <div class="stop-field-header">
+                <span>Stop {{ index + 1 }}</span>
+                <div
+                  class="input-mode-toggle compact"
+                  role="group"
+                  [attr.aria-label]="'Stop ' + (index + 1) + ' input method'"
+                >
+                  <button
+                    type="button"
+                    [attr.data-testid]="'stop-address-mode-' + stop.id"
+                    [class.active]="stop.inputMode === 'address'"
+                    [attr.aria-pressed]="stop.inputMode === 'address'"
+                    (click)="setStopInputMode(stop.id, 'address')"
+                  >
+                    Address
+                  </button>
+                  <button
+                    type="button"
+                    [class.active]="stop.inputMode === 'coordinates'"
+                    [attr.data-testid]="'stop-coordinate-mode-' + stop.id"
+                    [attr.aria-pressed]="stop.inputMode === 'coordinates'"
+                    (click)="setStopInputMode(stop.id, 'coordinates')"
+                  >
+                    Coordinates
+                  </button>
+                </div>
+              </div>
+
+              @if (stop.inputMode === 'address') {
+                <div class="address-search-row compact-search">
+                  <label class="address-field">
+                    <span>Address</span>
+                    <input
+                      [name]="'stopAddress' + stop.id"
+                      [attr.data-testid]="'stop-address-' + stop.id"
+                      autocomplete="street-address"
+                      [ngModel]="stop.address"
+                      (ngModelChange)="updateStopAddress(stop.id, $event)"
+                      (keydown.enter)="searchStopAddress(stop.id); $event.preventDefault()"
+                      placeholder="Enter a Bengaluru address"
+                    />
+                  </label>
+                  <button
+                    class="search-address-button"
+                    type="button"
+                    [attr.data-testid]="'search-stop-address-' + stop.id"
+                    [disabled]="searchingStopId() === stop.id"
+                    (click)="searchStopAddress(stop.id)"
+                  >
+                    {{ searchingStopId() === stop.id ? 'Searching…' : 'Find' }}
+                  </button>
+                </div>
+                @if (stopSuggestions()[stop.id]; as suggestions) {
+                  @if (suggestions.length > 0) {
+                    <ul
+                      class="address-suggestions compact-suggestions"
+                      [attr.data-testid]="'stop-suggestions-' + stop.id"
+                    >
+                      @for (suggestion of suggestions; track suggestion.display_name) {
+                        <li>
+                          <button type="button" (click)="selectStopSuggestion(stop.id, suggestion)">
+                            <span>{{ suggestion.display_name }}</span>
+                            <small>
+                              {{ suggestion.lat.toFixed(5) }}, {{ suggestion.lng.toFixed(5) }}
+                            </small>
+                          </button>
+                        </li>
+                      }
+                    </ul>
+                  }
+                }
+                @if (stopSearchErrors()[stop.id]; as searchError) {
+                  <p class="address-search-error" role="alert">{{ searchError }}</p>
+                }
+                @if (stop.resolvedAddress) {
+                  <p class="resolved-address">Matched: {{ stop.resolvedAddress }}</p>
+                }
+              } @else {
+                <div class="stop-coordinate-grid">
+                  <label>
+                    <span>Latitude</span>
+                    <input
+                      [name]="'stopLat' + stop.id"
+                      [attr.data-testid]="'stop-lat-' + stop.id"
+                      inputmode="decimal"
+                      autocomplete="off"
+                      [ngModel]="stop.lat"
+                      (ngModelChange)="updateStopCoordinate(stop.id, 'lat', $event)"
+                      placeholder="Latitude"
+                    />
+                  </label>
+                  <label>
+                    <span>Longitude</span>
+                    <input
+                      [name]="'stopLng' + stop.id"
+                      [attr.data-testid]="'stop-lng-' + stop.id"
+                      inputmode="decimal"
+                      autocomplete="off"
+                      [ngModel]="stop.lng"
+                      (ngModelChange)="updateStopCoordinate(stop.id, 'lng', $event)"
+                      placeholder="Longitude"
+                    />
+                  </label>
+                </div>
+              }
+            </div>
             <button
               class="remove-button"
               type="button"
@@ -114,7 +270,7 @@
         <button class="submit-button" type="submit" [disabled]="loading()">
           @if (loading()) {
             <span class="spinner" aria-hidden="true"></span>
-            Optimizing route…
+            {{ resolvingAddresses() ? 'Finding addresses…' : 'Optimizing route…' }}
           } @else {
             Optimize {{ stopCount() }} stops <span aria-hidden="true">→</span>
           }
@@ -127,66 +283,85 @@
           }}
         </p>
       </div>
+      <p class="geocoding-credit">
+        Address search uses
+        <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">
+          OpenStreetMap
+        </a>
+        data and is limited to the loaded Bengaluru map area.
+      </p>
     </form>
 
-    <aside class="result-panel" aria-live="polite">
-      <div class="panel-topline">
-        <span>Route result</span>
-        <span class="status-dot" [class.active]="loading()"></span>
-      </div>
+    <div class="workspace-sidebar">
+      <app-route-map />
 
-      @if (currentRouteResult(); as result) {
-        @if (isRouteResult(result)) {
-          <div class="result-content">
-            <p class="result-kicker">Optimized route</p>
-            <strong>{{ (result.total_distance_m / 1000).toFixed(1) }} km</strong>
-            <span>{{ formatDuration(result.total_duration_s) }} estimated drive</span>
-            <div class="metric-grid">
-              <div>
-                <span>Distance saved</span>
-                <b>{{ result.improvement_pct.toFixed(1) }}%</b>
+      <aside class="result-panel" aria-live="polite">
+        <div class="panel-topline">
+          <span>Route result</span>
+          <span class="status-dot" [class.active]="loading()"></span>
+        </div>
+
+        @if (currentRouteResult(); as result) {
+          @if (isRouteResult(result)) {
+            <div class="result-content">
+              <p class="result-kicker">Optimized route</p>
+              <strong>{{ (result.total_distance_m / 1000).toFixed(1) }} km</strong>
+              <span>{{ formatDuration(result.total_duration_s) }} estimated drive</span>
+              <div class="metric-grid">
+                <div>
+                  <span>Distance saved</span>
+                  <b>{{ result.improvement_pct.toFixed(1) }}%</b>
+                </div>
+                <div>
+                  <span>Response</span>
+                  <b>{{ result.cached ? 'Cached' : 'Fresh' }}</b>
+                </div>
               </div>
-              <div>
-                <span>Response</span>
-                <b>{{ result.cached ? 'Cached' : 'Fresh' }}</b>
-              </div>
-            </div>
-            <div class="order-block">
-              <span>Recommended stop order</span>
-              <p>
-                @for (stopIndex of result.optimized_order; track $index; let last = $last) {
-                  <b>{{ stopIndex + 1 }}</b>
-                  @if (!last) {
-                    <i>→</i>
+              <div class="order-block">
+                <span>Recommended visit order</span>
+                <p class="order-help">Marker numbers match the map.</p>
+                <ol data-testid="recommended-stop-order">
+                  @for (
+                    stopIndex of result.optimized_order;
+                    track $index;
+                    let visitIndex = $index
+                  ) {
+                    <li>
+                      <b>{{ visitIndex + 1 }}</b>
+                      <span>
+                        <strong>Stop {{ stopIndex + 1 }}</strong>
+                        <small>{{ stopDisplayLabel(stopIndex) }}</small>
+                      </span>
+                    </li>
                   }
-                }
-              </p>
+                </ol>
+              </div>
             </div>
-          </div>
-        } @else if (isJobResult(result)) {
-          <div class="job-content">
-            <div class="job-orbit"><span></span></div>
-            <p class="result-kicker">Background job</p>
-            <strong>{{ result.status }}</strong>
-            <span class="job-id">{{ result.job_id }}</span>
-            @if ('route_id' in result && result.route_id) {
-              <p>Your optimized route is ready.</p>
-            } @else {
-              <p>You can leave this screen—the worker will keep going.</p>
-            }
-            <a [routerLink]="['/jobs']" [queryParams]="{ id: result.job_id }">Open job status →</a>
+          } @else if (isJobResult(result)) {
+            <div class="job-content">
+              <div class="job-orbit"><span></span></div>
+              <p class="result-kicker">Background job</p>
+              <strong>{{ result.status }}</strong>
+              <span class="job-id">{{ result.job_id }}</span>
+              @if ('route_id' in result && result.route_id) {
+                <p>Your optimized route is ready.</p>
+              } @else {
+                <p>You can leave this screen—the worker will keep going.</p>
+              }
+              <a [routerLink]="['/jobs']" [queryParams]="{ id: result.job_id }"
+                >Open job status →</a
+              >
+            </div>
+          }
+        } @else {
+          <div class="empty-state">
+            <div class="route-mark" aria-hidden="true"><span></span><span></span><span></span></div>
+            <p class="result-kicker">Ready when you are</p>
+            <strong>Your route summary will appear here.</strong>
+            <span>Add at least two stops, then optimize.</span>
           </div>
         }
-      } @else {
-        <div class="empty-state">
-          <div class="route-mark" aria-hidden="true"><span></span><span></span><span></span></div>
-          <p class="result-kicker">Ready when you are</p>
-          <strong>Your route summary will appear here.</strong>
-          <span>Add at least two stops, then optimize.</span>
-        </div>
-      }
-    </aside>
+      </aside>
+    </div>
   </div>
-
-  <app-route-map />
 </section>

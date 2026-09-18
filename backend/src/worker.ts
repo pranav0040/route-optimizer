@@ -63,7 +63,12 @@ async function main() {
   process.once('SIGINT', () => void shutdown());
 
   workerLogger.info(
-    { graphNodes: graph.nodeCount, graphEdges: graph.edgeCount },
+    {
+      graphNodes: graph.nodeCount,
+      graphEdges: graph.edgeCount,
+      routableGraphNodes: graph.routableNodeCount,
+      routableBounds: graph.routableBounds
+    },
     'Route optimizer worker started'
   );
 }

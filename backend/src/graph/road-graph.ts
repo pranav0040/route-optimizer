@@ -17,6 +17,13 @@ export interface AdjacentEdge {
   distanceM: number;
 }
 
+export interface GraphBounds {
+  south: number;
+  west: number;
+  north: number;
+  east: number;
+}
+
 interface NodeRow {
   id: string | number;
   lat: string | number;
@@ -32,11 +39,15 @@ interface EdgeRow {
 export class RoadGraph {
   private readonly nodesById = new Map<number, GraphNode>();
   private readonly adjacencyByNodeId = new Map<number, AdjacentEdge[]>();
+  private readonly reverseAdjacencyByNodeId = new Map<number, number[]>();
+  private readonly routableNodeIds: Set<number>;
+  private readonly routableBoundsValue: GraphBounds | null;
 
   constructor(nodes: GraphNode[], edges: GraphEdge[]) {
     for (const node of nodes) {
       this.nodesById.set(node.id, node);
       this.adjacencyByNodeId.set(node.id, []);
+      this.reverseAdjacencyByNodeId.set(node.id, []);
     }
 
     for (const edge of edges) {
@@ -50,7 +61,14 @@ export class RoadGraph {
         toNodeId: edge.toNodeId,
         distanceM: edge.distanceM
       });
+      this.reverseAdjacencyByNodeId.get(edge.toNodeId)?.push(edge.fromNodeId);
     }
+
+    this.routableNodeIds = largestStronglyConnectedComponent(
+      this.adjacencyByNodeId,
+      this.reverseAdjacencyByNodeId
+    );
+    this.routableBoundsValue = calculateBounds(this.nodesById, this.routableNodeIds);
   }
 
   get nodeCount() {
@@ -67,6 +85,14 @@ export class RoadGraph {
     return count;
   }
 
+  get routableNodeCount() {
+    return this.routableNodeIds.size;
+  }
+
+  get routableBounds() {
+    return this.routableBoundsValue ? { ...this.routableBoundsValue } : null;
+  }
+
   getNode(nodeId: number) {
     return this.nodesById.get(nodeId) ?? null;
   }
@@ -78,6 +104,109 @@ export class RoadGraph {
   getNodeIds() {
     return Array.from(this.nodesById.keys());
   }
+
+  isRoutableNode(nodeId: number) {
+    return this.routableNodeIds.has(nodeId);
+  }
+}
+
+function calculateBounds(nodes: Map<number, GraphNode>, includedNodeIds: Set<number>) {
+  let south = Number.POSITIVE_INFINITY;
+  let west = Number.POSITIVE_INFINITY;
+  let north = Number.NEGATIVE_INFINITY;
+  let east = Number.NEGATIVE_INFINITY;
+
+  for (const nodeId of includedNodeIds) {
+    const node = nodes.get(nodeId);
+
+    if (!node) {
+      continue;
+    }
+
+    south = Math.min(south, node.lat);
+    west = Math.min(west, node.lng);
+    north = Math.max(north, node.lat);
+    east = Math.max(east, node.lng);
+  }
+
+  return Number.isFinite(south) ? { south, west, north, east } : null;
+}
+
+function largestStronglyConnectedComponent(
+  adjacency: Map<number, AdjacentEdge[]>,
+  reverseAdjacency: Map<number, number[]>
+) {
+  const visited = new Set<number>();
+  const finishOrder: number[] = [];
+
+  for (const startNodeId of adjacency.keys()) {
+    if (visited.has(startNodeId)) {
+      continue;
+    }
+
+    visited.add(startNodeId);
+    const stack: Array<{ nodeId: number; nextNeighborIndex: number }> = [
+      { nodeId: startNodeId, nextNeighborIndex: 0 }
+    ];
+
+    while (stack.length > 0) {
+      const frame = stack[stack.length - 1];
+      const neighbors = adjacency.get(frame.nodeId) ?? [];
+      const neighbor = neighbors[frame.nextNeighborIndex];
+
+      if (neighbor) {
+        frame.nextNeighborIndex += 1;
+
+        if (!visited.has(neighbor.toNodeId)) {
+          visited.add(neighbor.toNodeId);
+          stack.push({ nodeId: neighbor.toNodeId, nextNeighborIndex: 0 });
+        }
+
+        continue;
+      }
+
+      finishOrder.push(frame.nodeId);
+      stack.pop();
+    }
+  }
+
+  const assigned = new Set<number>();
+  let largestComponent = new Set<number>();
+
+  for (let index = finishOrder.length - 1; index >= 0; index -= 1) {
+    const startNodeId = finishOrder[index];
+
+    if (assigned.has(startNodeId)) {
+      continue;
+    }
+
+    const component = new Set<number>();
+    const stack = [startNodeId];
+    assigned.add(startNodeId);
+
+    while (stack.length > 0) {
+      const nodeId = stack.pop();
+
+      if (nodeId === undefined) {
+        continue;
+      }
+
+      component.add(nodeId);
+
+      for (const neighborId of reverseAdjacency.get(nodeId) ?? []) {
+        if (!assigned.has(neighborId)) {
+          assigned.add(neighborId);
+          stack.push(neighborId);
+        }
+      }
+    }
+
+    if (component.size > largestComponent.size) {
+      largestComponent = component;
+    }
+  }
+
+  return largestComponent;
 }
 
 let activeRoadGraph: RoadGraph | null = null;

@@ -19,7 +19,7 @@
 .eyebrow {
   grid-column: 1 / -1;
   margin: 0;
-  color: #d15336;
+  color: var(--color-muted);
   font-size: 0.72rem;
   font-weight: 800;
   letter-spacing: 0.16em;
@@ -28,7 +28,7 @@
 
 h1 {
   margin: 0;
-  color: #132720;
+  color: var(--color-ink);
   font-family: Georgia, 'Times New Roman', serif;
   font-size: clamp(3rem, 7vw, 5rem);
   font-weight: 400;
@@ -37,14 +37,14 @@ h1 {
 
 .status-intro > p:last-child {
   margin: 0 0 0.5rem;
-  color: #68736d;
+  color: var(--color-muted);
   line-height: 1.65;
 }
 
 .lookup-form {
   margin-bottom: 1rem;
-  border: 1px solid #d9ddd4;
-  background: #fffef9;
+  border: 1px solid var(--color-line);
+  background: var(--color-surface);
   padding: 1.25rem;
 }
 
@@ -53,7 +53,7 @@ label,
 .route-reference span {
   display: block;
   margin-bottom: 0.55rem;
-  color: #78827b;
+  color: var(--color-muted);
   font-size: 0.68rem;
   font-weight: 800;
   letter-spacing: 0.1em;
@@ -74,19 +74,19 @@ button {
 
 input {
   min-width: 0;
-  border: 1px solid #ccd2c9;
+  border: 1px solid var(--color-line);
   outline: none;
-  background: #faf9f3;
+  background: var(--color-surface);
   padding: 0 1rem;
 }
 
 input:focus {
-  border-color: #557365;
+  border-color: var(--color-ink);
 }
 
 button {
   border: 0;
-  background: #d15336;
+  background: var(--color-ink);
   color: white;
   padding: 0 1.5rem;
   font-size: 0.82rem;
@@ -101,9 +101,9 @@ button:disabled {
 
 .status-card {
   min-height: 310px;
-  border: 1px solid #d9ddd4;
-  background: #193229;
-  color: #f7f4e9;
+  border: 1px solid var(--color-line);
+  background: var(--color-surface);
+  color: var(--color-ink);
   padding: clamp(1.75rem, 5vw, 3rem);
 }
 
@@ -112,10 +112,10 @@ button:disabled {
   align-items: center;
   gap: 0.55rem;
   margin-bottom: 2rem;
-  border: 1px solid #536d61;
+  border: 1px solid var(--color-line-strong);
   border-radius: 2rem;
   padding: 0.45rem 0.75rem;
-  color: #d7dfda;
+  color: var(--color-muted);
   font-size: 0.68rem;
   font-weight: 800;
   letter-spacing: 0.08em;
@@ -126,21 +126,21 @@ button:disabled {
   width: 0.45rem;
   height: 0.45rem;
   border-radius: 50%;
-  background: #e27858;
+  background: var(--color-muted);
 }
 
 .status-badge[data-status='completed'] span {
-  background: #74bb8f;
+  background: var(--color-success);
 }
 
 .status-badge[data-status='failed'] span {
-  background: #ff8067;
+  background: var(--color-danger);
 }
 
 code {
   display: block;
   overflow: hidden;
-  color: #f7f4e9;
+  color: var(--color-ink);
   font-size: 0.85rem;
   text-overflow: ellipsis;
 }
@@ -162,31 +162,31 @@ code {
   width: 2rem;
   height: 2rem;
   place-items: center;
-  border: 1px solid #587066;
+  border: 1px solid var(--color-line-strong);
   border-radius: 50%;
-  color: #8da097;
+  color: var(--color-muted);
   font-size: 0.7rem;
 }
 
 .timeline .complete span {
-  border-color: #e27858;
-  background: #e27858;
-  color: #193229;
+  border-color: var(--color-ink);
+  background: var(--color-ink);
+  color: var(--color-surface);
 }
 
 .timeline p {
   margin: 0.55rem 0 0;
-  color: #99aaa1;
+  color: var(--color-muted);
   font-size: 0.68rem;
 }
 
 .timeline i {
   margin-top: 1rem;
-  border-top: 1px dashed #587066;
+  border-top: 1px solid var(--color-line-strong);
 }
 
 .route-reference {
-  border-top: 1px solid rgb(255 255 255 / 13%);
+  border-top: 1px solid var(--color-line);
   padding-top: 1.25rem;
 }
 
@@ -210,9 +210,9 @@ code {
   height: 3rem;
   margin-bottom: 1.5rem;
   place-items: center;
-  border: 1px solid #587066;
+  border: 1px solid var(--color-line-strong);
   border-radius: 50%;
-  color: #e27858;
+  color: var(--color-ink);
   font-size: 1.3rem;
 }
 
@@ -224,14 +224,14 @@ code {
 
 .empty-status p {
   margin: 0.6rem 0 0;
-  color: #95a69d;
+  color: var(--color-muted);
   font-size: 0.8rem;
 }
 
 .error-message {
-  border-left: 3px solid #c8462b;
-  background: #fff3ed;
-  color: #8e321f;
+  border-left: 3px solid var(--color-danger);
+  background: #fff6f5;
+  color: var(--color-danger);
   padding: 0.8rem 1rem;
   font-size: 0.85rem;
 }

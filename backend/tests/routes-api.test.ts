@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 import { createApp } from '../src/app.js';
 import type { NearestNode } from '../src/db/nearest-node.js';
+import type { Geocoder } from '../src/geocoding/geocoder.js';
 import { type GraphEdge, type GraphNode, RoadGraph } from '../src/graph/road-graph.js';
 
 const graph = new RoadGraph(
@@ -31,6 +32,128 @@ const app = createApp({
       return '11111111-1111-4111-8111-111111111111';
     }
   }
+});
+
+describe('GET /api/routes/coverage', () => {
+  it('returns the strongly connected graph bounds and configured snap radius', async () => {
+    const response = await request(app).get('/api/routes/coverage');
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({
+      bounds: { south: 0, west: 0, north: 0.003, east: 0 },
+      snap_radius_m: 500,
+      routable_node_count: 4
+    });
+  });
+});
+
+describe('GET /api/geocoding/search', () => {
+  it('returns the coordinate and display name for an address', async () => {
+    const geocoder: Geocoder = {
+      async geocode() {
+        return {
+          lat: 12.976347,
+          lng: 77.592928,
+          displayName: 'Cubbon Park, Bengaluru, Karnataka, India',
+          cached: false
+        };
+      },
+      async search() {
+        return [];
+      },
+      async reverse() {
+        return null;
+      }
+    };
+    const response = await request(createApp({ geocoder }))
+      .get('/api/geocoding/search')
+      .query({ address: 'Cubbon Park' });
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({
+      lat: 12.976347,
+      lng: 77.592928,
+      display_name: 'Cubbon Park, Bengaluru, Karnataka, India',
+      cached: false
+    });
+  });
+
+  it('returns 422 when an address has no match', async () => {
+    const geocoder: Geocoder = {
+      geocode: async () => null,
+      search: async () => [],
+      reverse: async () => null
+    };
+    const response = await request(createApp({ geocoder }))
+      .get('/api/geocoding/search')
+      .query({ address: 'Unknown place' });
+
+    expect(response.status).toBe(422);
+    expect(response.body.error.code).toBe('ADDRESS_NOT_FOUND');
+  });
+
+  it('returns multiple selectable suggestions for an address query', async () => {
+    const geocoder: Geocoder = {
+      geocode: async () => null,
+      reverse: async () => null,
+      async search(_address, limit) {
+        expect(limit).toBe(5);
+        return [
+          {
+            lat: 12.976347,
+            lng: 77.592928,
+            displayName: 'Cubbon Park, Bengaluru, Karnataka, India',
+            cached: false
+          },
+          {
+            lat: 12.9751,
+            lng: 77.5931,
+            displayName: 'Cubbon Park Metro Station, Bengaluru, Karnataka, India',
+            cached: false
+          }
+        ];
+      }
+    };
+    const response = await request(createApp({ geocoder }))
+      .get('/api/geocoding/suggestions')
+      .query({ address: 'Cubbon Park' });
+
+    expect(response.status).toBe(200);
+    expect(response.body.suggestions).toHaveLength(2);
+    expect(response.body.suggestions[0]).toEqual({
+      lat: 12.976347,
+      lng: 77.592928,
+      display_name: 'Cubbon Park, Bengaluru, Karnataka, India',
+      cached: false
+    });
+  });
+
+  it('returns an address for a selected map coordinate', async () => {
+    const geocoder: Geocoder = {
+      geocode: async () => null,
+      search: async () => [],
+      async reverse(lat, lng) {
+        expect({ lat, lng }).toEqual({ lat: 12.976347, lng: 77.592928 });
+        return {
+          lat,
+          lng,
+          displayName: 'Cubbon Park, Bengaluru, Karnataka, India',
+          cached: false
+        };
+      }
+    };
+    const response = await request(createApp({ geocoder }))
+      .get('/api/geocoding/reverse')
+      .query({ lat: 12.976347, lng: 77.592928 });
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({
+      lat: 12.976347,
+      lng: 77.592928,
+      display_name: 'Cubbon Park, Bengaluru, Karnataka, India',
+      cached: false
+    });
+  });
 });
 
 describe('POST /api/routes/point-to-point', () => {

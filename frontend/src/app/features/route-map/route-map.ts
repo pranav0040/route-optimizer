@@ -2,6 +2,7 @@ import {
   AfterViewInit,
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   ElementRef,
   OnDestroy,
   ViewChild,
@@ -12,10 +13,16 @@ import {
   signal,
   untracked,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import * as L from 'leaflet';
 
 import type { Coordinate, OptimizeRequest, OptimizedRouteResponse } from '../../models/api.models';
-import { RouteStateService, type StopDraft } from '../../services/route-state.service';
+import {
+  type CoordinateDraft,
+  RouteStateService,
+  type StopDraft,
+} from '../../services/route-state.service';
+import { ApiService } from '../../services/api.service';
 import { CARTO_BASEMAP_KEY } from '../../services/runtime-config';
 
 export const VOYAGER_TILE_URL =
@@ -25,7 +32,11 @@ export const BASEMAP_ATTRIBUTION =
   '&copy; <a href="https://carto.com/attributions">CARTO</a>';
 
 const DEFAULT_CENTER: L.LatLngExpression = [12.9716, 77.5946];
-export const SNAP_RADIUS_M = 250;
+export const SNAP_RADIUS_M = 500;
+export const SEARCHABLE_AREA_BOUNDS: L.LatLngBoundsLiteral = [
+  [12.8467491, 77.5285614],
+  [13.0391168, 77.7420454],
+];
 
 @Component({
   selector: 'app-route-map',
@@ -38,8 +49,19 @@ export class RouteMapComponent implements AfterViewInit, OnDestroy {
   @ViewChild('map', { static: true }) private readonly mapElement!: ElementRef<HTMLElement>;
 
   private readonly routeState = inject(RouteStateService);
+  private readonly api = inject(ApiService);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly cartoBasemapKey = inject(CARTO_BASEMAP_KEY);
   private mapInstance?: L.Map;
+  private searchableAreaBounds = L.latLngBounds(SEARCHABLE_AREA_BOUNDS);
+  private readonly searchableAreaBoundary = L.rectangle(SEARCHABLE_AREA_BOUNDS, {
+    color: '#111111',
+    weight: 3,
+    opacity: 0.9,
+    fill: false,
+    interactive: false,
+    className: 'searchable-area-boundary',
+  });
   private readonly draftStopsLayerGroup = L.layerGroup();
   private readonly optimizedLayerGroup = L.layerGroup();
   private readonly naiveLayerGroup = L.layerGroup();
@@ -47,6 +69,9 @@ export class RouteMapComponent implements AfterViewInit, OnDestroy {
   private naiveBoundsPoints: L.LatLngExpression[] = [];
 
   protected readonly compareMode = signal(false);
+  protected readonly snapRadiusM = signal(SNAP_RADIUS_M);
+  protected readonly resolvingMapPoint = signal(false);
+  protected readonly mapPointMessage = signal<string | null>(null);
   protected readonly routeResult = computed(() => {
     const result = this.routeState.currentRouteResult();
     return result && 'optimized_order' in result ? result : null;
@@ -97,11 +122,17 @@ export class RouteMapComponent implements AfterViewInit, OnDestroy {
   });
 
   private readonly renderDraftStopsEffect = effect(() => {
+    const origin = this.routeState.origin();
     const stops = this.routeState.stops();
     const hasOptimizedRoute = this.routeResult() !== null;
 
     if (this.mapInstance) {
-      untracked(() => this.renderDraftStops(hasOptimizedRoute ? [] : stops));
+      untracked(() =>
+        this.renderDraftLocations(
+          hasOptimizedRoute ? null : origin,
+          hasOptimizedRoute ? [] : stops,
+        ),
+      );
     }
   });
 
@@ -118,11 +149,10 @@ export class RouteMapComponent implements AfterViewInit, OnDestroy {
       minZoom: 0,
       maxZoom: 20,
     }).addTo(this.mapInstance);
+    this.searchableAreaBoundary.addTo(this.mapInstance);
     this.draftStopsLayerGroup.addTo(this.mapInstance);
     this.optimizedLayerGroup.addTo(this.mapInstance);
-    this.mapInstance.on('click', ({ latlng }: L.LeafletMouseEvent) => {
-      this.routeState.addCoordinateStop({ lat: latlng.lat, lng: latlng.lng });
-    });
+    this.mapInstance.on('click', ({ latlng }: L.LeafletMouseEvent) => this.addStopFromMap(latlng));
 
     const request = this.routeState.submittedRequest();
     const result = this.routeResult();
@@ -130,8 +160,10 @@ export class RouteMapComponent implements AfterViewInit, OnDestroy {
     if (request && result) {
       this.renderRoute(request, result);
     } else {
-      this.renderDraftStops(this.routeState.stops());
+      this.renderDraftLocations(this.routeState.origin(), this.routeState.stops());
     }
+
+    this.loadRoutingCoverage();
   }
 
   ngOnDestroy() {
@@ -148,6 +180,61 @@ export class RouteMapComponent implements AfterViewInit, OnDestroy {
 
   protected formatMinutes(durationS: number) {
     return `${Math.round(durationS / 60)} min`;
+  }
+
+  private addStopFromMap(latlng: L.LatLng) {
+    if (!this.searchableAreaBounds.contains(latlng)) {
+      this.mapPointMessage.set('Choose a point inside the black searchable-area boundary.');
+      return;
+    }
+
+    if (this.resolvingMapPoint() || this.routeState.stops().length >= 25) {
+      return;
+    }
+
+    const coordinate = { lat: latlng.lat, lng: latlng.lng };
+    this.resolvingMapPoint.set(true);
+    this.mapPointMessage.set('Finding the address for this point…');
+    this.api
+      .reverseGeocode(coordinate.lat, coordinate.lng)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (result) => {
+          this.routeState.addResolvedStop(coordinate, result.display_name);
+          this.resolvingMapPoint.set(false);
+          this.mapPointMessage.set('Address added to delivery stops.');
+        },
+        error: () => {
+          this.routeState.addCoordinateStop(coordinate);
+          this.resolvingMapPoint.set(false);
+          this.mapPointMessage.set('No address was found, so the coordinates were added instead.');
+        },
+      });
+  }
+
+  private loadRoutingCoverage() {
+    this.api
+      .getRoutingCoverage()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: ({ bounds, snap_radius_m: snapRadiusM }) => {
+          this.searchableAreaBounds = L.latLngBounds(
+            [bounds.south, bounds.west],
+            [bounds.north, bounds.east],
+          );
+          this.searchableAreaBoundary.setBounds(this.searchableAreaBounds);
+          this.snapRadiusM.set(snapRadiusM);
+
+          if (this.routeResult()) {
+            this.fitVisibleBounds(this.compareMode());
+          } else {
+            this.renderDraftLocations(this.routeState.origin(), this.routeState.stops());
+          }
+        },
+        error: () => {
+          // Keep the built-in coverage fallback when metadata is temporarily unavailable.
+        },
+      });
   }
 
   private renderRoute(request: OptimizeRequest, result: OptimizedRouteResponse) {
@@ -192,27 +279,41 @@ export class RouteMapComponent implements AfterViewInit, OnDestroy {
     }).addTo(this.optimizedLayerGroup);
 
     optimizedStops.forEach(({ inputIndex, coordinate }, optimizedIndex) => {
-      const changedPosition = inputIndex !== optimizedIndex;
-      const previousPosition = changedPosition
-        ? `<small>was ${ordinal(inputIndex + 1)}</small>`
-        : '';
-
       L.marker([coordinate.lat, coordinate.lng], {
         icon: L.divIcon({
           className: 'route-stop-icon',
-          html: `<span>${optimizedIndex + 1}</span>${previousPosition}`,
-          iconSize: [58, changedPosition ? 52 : 32],
+          html: `<span>${optimizedIndex + 1}</span><small>Stop ${inputIndex + 1}</small>`,
+          iconSize: [58, 52],
           iconAnchor: [29, 16],
         }),
         keyboard: false,
+        title: `Visit ${optimizedIndex + 1}: Stop ${inputIndex + 1}`,
       }).addTo(this.optimizedLayerGroup);
     });
 
     this.syncComparisonLayer(this.compareMode());
   }
 
-  private renderDraftStops(stops: StopDraft[]) {
+  private renderDraftLocations(origin: CoordinateDraft | null, stops: StopDraft[]) {
     this.draftStopsLayerGroup.clearLayers();
+    const boundsPoints: L.LatLngExpression[] = searchableAreaBoundsPoints(
+      this.searchableAreaBounds,
+    );
+    const originCoordinate = origin ? parseDraftCoordinate(origin) : null;
+
+    if (originCoordinate) {
+      boundsPoints.push([originCoordinate.lat, originCoordinate.lng]);
+      L.marker([originCoordinate.lat, originCoordinate.lng], {
+        icon: L.divIcon({
+          className: 'route-origin-icon route-draft-origin-icon',
+          html: '<span aria-hidden="true"></span><b>Origin</b>',
+          iconSize: [54, 46],
+          iconAnchor: [27, 18],
+        }),
+        keyboard: false,
+        title: origin?.resolvedAddress || 'Origin',
+      }).addTo(this.draftStopsLayerGroup);
+    }
 
     stops.forEach((stop, index) => {
       const coordinate = parseDraftCoordinate(stop);
@@ -221,13 +322,15 @@ export class RouteMapComponent implements AfterViewInit, OnDestroy {
         return;
       }
 
+      boundsPoints.push([coordinate.lat, coordinate.lng]);
+
       L.circle([coordinate.lat, coordinate.lng], {
-        radius: SNAP_RADIUS_M,
-        color: '#7c3aed',
+        radius: this.snapRadiusM(),
+        color: '#52525b',
         weight: 3,
         opacity: 1,
         dashArray: '10 7',
-        fillColor: '#a855f7',
+        fillColor: '#71717a',
         fillOpacity: 0.14,
         interactive: false,
         className: 'route-snap-radius',
@@ -241,8 +344,14 @@ export class RouteMapComponent implements AfterViewInit, OnDestroy {
           iconAnchor: [16, 16],
         }),
         keyboard: false,
-        title: `Stop ${index + 1}`,
+        title: stop.resolvedAddress || `Stop ${index + 1}`,
       }).addTo(this.draftStopsLayerGroup);
+    });
+
+    this.mapInstance?.fitBounds(L.latLngBounds(boundsPoints), {
+      animate: false,
+      padding: [36, 36],
+      maxZoom: 15,
     });
   }
 
@@ -279,9 +388,10 @@ export class RouteMapComponent implements AfterViewInit, OnDestroy {
       return;
     }
 
-    const points = includeNaiveRoute
+    const routePoints = includeNaiveRoute
       ? [...this.optimizedBoundsPoints, ...this.naiveBoundsPoints]
       : this.optimizedBoundsPoints;
+    const points = [...searchableAreaBoundsPoints(this.searchableAreaBounds), ...routePoints];
 
     this.mapInstance.fitBounds(L.latLngBounds(points), {
       animate: false,
@@ -299,27 +409,25 @@ function toLatLngs(coordinates: Coordinate[]): L.LatLngExpression[] {
   return coordinates.map(({ lat, lng }) => [lat, lng]);
 }
 
-function parseDraftCoordinate(stop: StopDraft): Coordinate | null {
-  if (stop.lat.trim() === '' || stop.lng.trim() === '') {
+function searchableAreaBoundsPoints(bounds: L.LatLngBounds): L.LatLngExpression[] {
+  return [bounds.getSouthWest(), bounds.getNorthEast()];
+}
+
+function parseDraftCoordinate(draft: CoordinateDraft): Coordinate | null {
+  if (
+    (draft.inputMode === 'address' && draft.resolvedAddress === '') ||
+    draft.lat.trim() === '' ||
+    draft.lng.trim() === ''
+  ) {
     return null;
   }
 
-  const lat = Number(stop.lat);
-  const lng = Number(stop.lng);
+  const lat = Number(draft.lat);
+  const lng = Number(draft.lng);
 
   if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) {
     return null;
   }
 
   return { lat, lng };
-}
-
-function ordinal(value: number) {
-  const remainder100 = value % 100;
-
-  if (remainder100 >= 11 && remainder100 <= 13) {
-    return `${value}th`;
-  }
-
-  return `${value}${['th', 'st', 'nd', 'rd'][Math.min(value % 10, 4)]}`;
 }

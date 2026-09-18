@@ -17,7 +17,7 @@ class SeededNodeClient implements Queryable {
   async query(_sql: string, params?: unknown[]) {
     this.calls.push(params ?? []);
 
-    const [lat, lng, snapRadiusM] = params as [number, number, number];
+    const [lat, lng, snapRadiusM, candidateLimit] = params as [number, number, number, number];
     const rows = this.nodes
       .map((node) => ({
         id: node.id,
@@ -27,7 +27,7 @@ class SeededNodeClient implements Queryable {
       }))
       .filter((row) => row.distance_m <= snapRadiusM)
       .sort((a, b) => a.distance_m - b.distance_m)
-      .slice(0, 1);
+      .slice(0, candidateLimit);
 
     return { rows };
   }
@@ -51,7 +51,7 @@ describe('findNearestNode', () => {
       lng: -89.4012
     });
     expect(nearest?.distanceM).toBeLessThan(5);
-    expect(client.calls[0]).toEqual([43.07312, -89.40118, 250]);
+    expect(client.calls[0]).toEqual([43.07312, -89.40118, 500, 256]);
   });
 
   it('returns null when no seeded node is inside the snap radius', async () => {
@@ -60,7 +60,19 @@ describe('findNearestNode', () => {
     const nearest = await findNearestNode(43.2, -89.6, { client, snapRadiusM: 100 });
 
     expect(nearest).toBeNull();
-    expect(client.calls[0]).toEqual([43.2, -89.6, 100]);
+    expect(client.calls[0]).toEqual([43.2, -89.6, 100, 256]);
+  });
+
+  it('skips a closer disconnected candidate in favor of a routable node', async () => {
+    const client = new SeededNodeClient(seededNodes);
+
+    const nearest = await findNearestNode(43.07312, -89.40118, {
+      client,
+      snapRadiusM: 3_000,
+      acceptNode: (nodeId) => nodeId !== 101
+    });
+
+    expect(nearest?.id).toBe(102);
   });
 
   it('rejects invalid coordinates before querying the database', async () => {

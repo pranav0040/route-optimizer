@@ -3,6 +3,26 @@ export interface Coordinate {
   lng: number;
 }
 
+export interface GeocodeResponse extends Coordinate {
+  display_name: string;
+  cached: boolean;
+}
+
+export interface GeocodeSuggestionsResponse {
+  suggestions: GeocodeResponse[];
+}
+
+export interface RoutingCoverageResponse {
+  bounds: {
+    south: number;
+    west: number;
+    north: number;
+    east: number;
+  };
+  snap_radius_m: number;
+  routable_node_count: number;
+}
+
 export type PathfindingAlgorithm = 'dijkstra' | 'astar';
 
 export interface PointToPointRequest {

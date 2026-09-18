@@ -14,7 +14,7 @@ import {
 } from '../algorithms/route-optimizer.js';
 import { createRouteCacheKey } from '../cache/cache-key.js';
 import type { RouteResponseCache } from '../cache/route-cache.js';
-import { findNearestNode, type NearestNode } from '../db/nearest-node.js';
+import { findNearestNode, getSnapRadiusM, type NearestNode } from '../db/nearest-node.js';
 import { getRoadGraph, type RoadGraph } from '../graph/road-graph.js';
 import { ApiError } from '../http/api-error.js';
 import type { OptimizationJobQueue } from '../jobs/types.js';
@@ -71,11 +71,37 @@ export interface RouteRouterOptions {
 
 export function createRouteRouter(options: RouteRouterOptions = {}) {
   const router = Router();
-  const snapCoordinate = options.snapCoordinate ?? ((lat, lng) => findNearestNode(lat, lng));
   const graph = () => options.graph ?? getRoadGraph();
+  const snapCoordinate =
+    options.snapCoordinate ??
+    ((lat, lng) => {
+      const roadGraph = graph();
+      return findNearestNode(lat, lng, {
+        acceptNode: (nodeId) => roadGraph.isRoutableNode(nodeId)
+      });
+    });
   const dijkstra = options.dijkstra ?? dijkstraShortestPath;
   const aStar = options.aStar ?? aStarShortestPath;
   const optimizeRoute = options.optimizeRoute ?? optimizeMultiStopRoute;
+
+  router.get('/coverage', (_req, res) => {
+    const roadGraph = graph();
+    const bounds = roadGraph.routableBounds;
+
+    if (!bounds) {
+      throw new ApiError(
+        503,
+        'GRAPH_UNAVAILABLE',
+        'Routable road-network coverage is unavailable.'
+      );
+    }
+
+    res.json({
+      bounds,
+      snap_radius_m: getSnapRadiusM(),
+      routable_node_count: roadGraph.routableNodeCount
+    });
+  });
 
   router.post(
     '/point-to-point',

@@ -17,9 +17,12 @@ interface NearestNodeRow {
 export interface FindNearestNodeOptions {
   client?: Queryable;
   snapRadiusM?: number;
+  candidateLimit?: number;
+  acceptNode?: (nodeId: number) => boolean;
 }
 
-const DEFAULT_SNAP_RADIUS_M = 250;
+export const DEFAULT_SNAP_RADIUS_M = 500;
+const DEFAULT_CANDIDATE_LIMIT = 256;
 
 export async function findNearestNode(
   lat: number,
@@ -29,10 +32,15 @@ export async function findNearestNode(
   assertCoordinate(lat, lng);
 
   const client = options.client ?? pool;
-  const snapRadiusM = options.snapRadiusM ?? DEFAULT_SNAP_RADIUS_M;
+  const snapRadiusM = options.snapRadiusM ?? getSnapRadiusM();
+  const candidateLimit = options.candidateLimit ?? DEFAULT_CANDIDATE_LIMIT;
 
   if (!Number.isFinite(snapRadiusM) || snapRadiusM <= 0) {
     throw new RangeError('snapRadiusM must be a positive finite number');
+  }
+
+  if (!Number.isInteger(candidateLimit) || candidateLimit <= 0) {
+    throw new RangeError('candidateLimit must be a positive integer');
   }
 
   const result = await client.query<NearestNodeRow>(
@@ -48,12 +56,12 @@ export async function findNearestNode(
       FROM nodes, query_point
       WHERE ST_DWithin(nodes.geom, query_point.geom, $3)
       ORDER BY nodes.geom <-> query_point.geom
-      LIMIT 1
+      LIMIT $4
     `,
-    [lat, lng, snapRadiusM]
+    [lat, lng, snapRadiusM, candidateLimit]
   );
 
-  const row = result.rows[0];
+  const row = result.rows.find((candidate) => options.acceptNode?.(Number(candidate.id)) ?? true);
 
   if (!row) {
     return null;
@@ -65,6 +73,22 @@ export async function findNearestNode(
     lng: Number(row.lng),
     distanceM: Number(row.distance_m)
   };
+}
+
+export function getSnapRadiusM() {
+  const rawValue = process.env.SNAP_RADIUS_M;
+
+  if (!rawValue) {
+    return DEFAULT_SNAP_RADIUS_M;
+  }
+
+  const value = Number(rawValue);
+
+  if (!Number.isFinite(value) || value <= 0) {
+    throw new RangeError('SNAP_RADIUS_M must be a positive finite number');
+  }
+
+  return value;
 }
 
 function assertCoordinate(lat: number, lng: number) {
