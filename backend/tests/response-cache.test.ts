@@ -122,6 +122,53 @@ describe('route response caching', () => {
     expect(enqueue).not.toHaveBeenCalled();
   });
 
+  it('returns a cached result instead of enqueueing an explicitly backgrounded request', async () => {
+    const cache = new RedisRouteResponseCache(new MemoryCacheClient(() => Date.now()), 60);
+    const enqueue = vi.fn(async () => 'unused-job-id');
+    const body = {
+      origin: { lat: 0, lng: 0 },
+      stops: [
+        { lat: 0.002, lng: 0 },
+        { lat: 0.001, lng: 0 }
+      ],
+      background: true
+    };
+    const cacheKey = createRouteCacheKey({
+      type: 'optimize',
+      origin: body.origin,
+      stops: body.stops,
+      algorithm: 'nearest-neighbor-2opt-astar'
+    });
+    const cachedRoute = {
+      optimized_order: [1, 0],
+      optimized_path: [
+        [0, 0],
+        [0.001, 0],
+        [0.002, 0]
+      ],
+      total_distance_m: 200,
+      total_duration_s: 14,
+      naive_path: [
+        [0, 0],
+        [0.001, 0],
+        [0.002, 0],
+        [0.001, 0]
+      ],
+      naive_distance_m: 300,
+      naive_duration_s: 22,
+      improvement_pct: 33.3,
+      cached: false
+    };
+
+    await cache.set(cacheKey, cachedRoute);
+    const app = createApp({ graph, snapCoordinate, cache, jobQueue: { enqueue } });
+    const response = await request(app).post('/api/routes/optimize').send(body);
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ ...cachedRoute, cached: true });
+    expect(enqueue).not.toHaveBeenCalled();
+  });
+
   it('recomputes after the configured cache TTL expires', async () => {
     let nowMs = 0;
     const dijkstra = vi.fn(dijkstraShortestPath);

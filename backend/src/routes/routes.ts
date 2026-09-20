@@ -36,7 +36,8 @@ const pointToPointSchema = z.object({
 
 const optimizeSchema = z.object({
   origin: coordinateSchema,
-  stops: z.array(coordinateSchema).min(2).max(25)
+  stops: z.array(coordinateSchema).min(2).max(25),
+  background: z.boolean().optional().default(false)
 });
 
 type Coordinate = z.infer<typeof coordinateSchema>;
@@ -154,7 +155,7 @@ export function createRouteRouter(options: RouteRouterOptions = {}) {
         return;
       }
 
-      if (body.stops.length > SYNC_STOP_LIMIT) {
+      if (body.background || body.stops.length > SYNC_STOP_LIMIT) {
         if (!options.jobQueue) {
           throw new ApiError(503, 'JOB_QUEUE_UNAVAILABLE', 'Background job queue is unavailable.');
         }

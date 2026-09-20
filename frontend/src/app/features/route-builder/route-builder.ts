@@ -9,7 +9,7 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { forkJoin, map, of, switchMap, throwError, type Observable } from 'rxjs';
 
 import {
@@ -38,6 +38,7 @@ import { RouteMapComponent } from '../route-map/route-map';
 })
 export class RouteBuilderComponent {
   private readonly api = inject(ApiService);
+  private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   private readonly routeState = inject(RouteStateService);
   private originSearchTimer?: ReturnType<typeof setTimeout>;
@@ -49,7 +50,10 @@ export class RouteBuilderComponent {
   protected readonly loading = this.routeState.loading;
   protected readonly errorMessage = this.routeState.errorMessage;
   protected readonly stopCount = computed(() => this.stops().length);
-  protected readonly usesAsyncProcessing = computed(() => this.stopCount() > 15);
+  protected readonly backgroundProcessing = signal(true);
+  protected readonly usesAsyncProcessing = computed(
+    () => this.backgroundProcessing() || this.stopCount() > 15,
+  );
   protected readonly resolvingAddresses = signal(false);
   protected readonly originSuggestions = signal<GeocodeResponse[]>([]);
   protected readonly stopSuggestions = signal<Record<number, GeocodeResponse[]>>({});
@@ -208,6 +212,14 @@ export class RouteBuilderComponent {
     this.stopSearchErrors.update((errors) => omitKey(errors, id));
   }
 
+  protected setBackgroundProcessing(background: boolean) {
+    if (!background && this.stopCount() > 15) {
+      return;
+    }
+
+    this.backgroundProcessing.set(background);
+  }
+
   protected submit() {
     const stopDrafts = this.stops();
 
@@ -234,6 +246,7 @@ export class RouteBuilderComponent {
           const request = {
             origin: origin.coordinate,
             stops: stops.map(({ coordinate }) => coordinate),
+            background: this.usesAsyncProcessing(),
           };
 
           if (origin.geocoded) {
@@ -261,7 +274,8 @@ export class RouteBuilderComponent {
           this.currentRouteResult.set(response);
 
           if (isQueuedJob(response)) {
-            this.pollJob(response.job_id);
+            this.loading.set(false);
+            void this.router.navigate(['/jobs'], { queryParams: { id: response.job_id } });
           } else {
             this.loading.set(false);
           }
@@ -293,23 +307,6 @@ export class RouteBuilderComponent {
 
     const address = stop.resolvedAddress || stop.address.trim();
     return address || `${stop.lat}, ${stop.lng}`;
-  }
-
-  private pollJob(jobId: string) {
-    this.api
-      .pollJobUntilComplete(jobId)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (job) => {
-          this.currentRouteResult.set(job);
-          this.loading.set(false);
-
-          if (job.status === 'failed') {
-            this.errorMessage.set(job.error_reason ?? 'Route optimization failed.');
-          }
-        },
-        error: (error: unknown) => this.handleError(error),
-      });
   }
 
   private handleError(error: unknown) {

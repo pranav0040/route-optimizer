@@ -294,9 +294,12 @@ erDiagram
   "stops": [
     { "lat": 12.9611, "lng": 77.6387 },
     { "lat": 12.9352, "lng": 77.6146 }
-  ]
+  ],
+  "background": false
 }
 ```
+Set `background` to `true` to explicitly queue a valid 2-25 stop request after a cache miss. Cached
+results are returned immediately.
 **Response — 200 (≤15 stops, synchronous)**
 ```json
 {
@@ -307,7 +310,7 @@ erDiagram
   "improvement_pct": 19.4
 }
 ```
-**Response — 202 (>15 stops, async)**
+**Response — 202 (>15 stops or `background: true`, async)**
 ```json
 { "job_id": "b3f1c9...", "status": "queued" }
 ```
@@ -318,7 +321,11 @@ erDiagram
 { "job_id": "b3f1c9...", "status": "completed", "route_id": "a12e..." }
 ```
 
-### 8.4 Error Response Shape (all endpoints)
+### 8.4 `GET /api/routes/{route_id}`
+Returns a persisted completed optimization, including its origin, stops, optimized order and path,
+naive path, distance and duration totals, and improvement percentage.
+
+### 8.5 Error Response Shape (all endpoints)
 ```json
 { "error": { "code": "VALIDATION_ERROR", "message": "stops must contain 2-25 items" } }
 ```

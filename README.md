@@ -168,6 +168,11 @@ For 2-15 stops, the API returns `200` with `optimized_order`, `optimized_path`, 
 the naive path and totals, percentage improvement, and cache status. Stop indices refer to the
 submitted array and are zero-based.
 
+Set `"background": true` to queue any uncached 2-25 stop request and receive a job ID instead. The
+web app uses this mode by default so new calculations are shown on the Job Status page; a cache hit
+returns the optimized route immediately. Users can still choose an instant result for routes with up
+to 15 stops.
+
 Verified abridged response (the 363- and 324-coordinate path arrays are omitted here):
 
 ```json
@@ -182,7 +187,7 @@ Verified abridged response (the 363- and 324-coordinate path arrays are omitted 
 }
 ```
 
-For 16-25 stops, the API returns `202` immediately:
+For uncached requests with 16-25 stops, or with `"background": true`, the API returns `202`:
 
 ```json
 { "job_id": "b3f1c9...", "status": "queued", "cached": false }
@@ -191,6 +196,11 @@ For 16-25 stops, the API returns `202` immediately:
 Poll `GET /api/jobs/{job_id}` or connect to `ws://localhost:3000/ws/jobs/{job_id}`. Terminal states
 are `completed` (with `route_id`) and `failed` (with `error_reason`). More than 25 stops is rejected
 with `400`.
+
+Retrieve a completed optimization with `GET /api/routes/{route_id}`. The response includes the
+original origin and stops, optimized and naive geometry, visit order, totals, and improvement. The
+Job Status screen accepts either a job ID for progress tracking or a route ID for reopening the
+saved result in the map workspace.
 
 All endpoint errors use:
 

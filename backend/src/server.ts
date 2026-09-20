@@ -9,6 +9,7 @@ import {
   RedisRouteResponseCache
 } from './cache/route-cache.js';
 import { PostgresJobRepository } from './db/job-repository.js';
+import { PostgresRouteRepository } from './db/route-repository.js';
 import { NominatimGeocoder } from './geocoding/geocoder.js';
 import { initializeRoadGraph } from './graph/road-graph.js';
 import { BullMqOptimizationJobQueue } from './jobs/optimization-queue.js';
@@ -24,11 +25,19 @@ async function main() {
   const cacheClient = createRedisClient();
   const cache = new RedisRouteResponseCache(cacheClient, getCacheTtlSeconds());
   const repository = new PostgresJobRepository();
+  const routeRepository = new PostgresRouteRepository();
   const geocoder = new NominatimGeocoder({ cache });
   const publisher = new RedisJobStatusPublisher();
   const subscriber = new RedisJobStatusSubscriber();
   const jobQueue = new BullMqOptimizationJobQueue(repository, publisher);
-  const app = createApp({ graph, cache, jobQueue, jobRepository: repository, geocoder });
+  const app = createApp({
+    graph,
+    cache,
+    jobQueue,
+    jobRepository: repository,
+    routeRepository,
+    geocoder
+  });
   const server = createServer(app);
 
   const webSocketServer = await attachJobStatusWebSocket(server, repository, subscriber);

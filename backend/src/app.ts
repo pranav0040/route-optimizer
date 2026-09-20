@@ -6,16 +6,19 @@ import { ZodError } from 'zod';
 
 import type { RoadGraph } from './graph/road-graph.js';
 import type { Geocoder } from './geocoding/geocoder.js';
+import type { RouteRepository } from './db/route-repository.js';
 import { ApiError } from './http/api-error.js';
 import type { JobRepository } from './jobs/types.js';
 import { apiLogger } from './logging/logger.js';
 import { createJobRouter } from './routes/jobs.js';
 import { createGeocodingRouter } from './routes/geocoding.js';
 import { createRouteRouter, type RouteRouterOptions } from './routes/routes.js';
+import { createSavedRouteRouter } from './routes/saved-routes.js';
 
 export interface CreateAppOptions extends RouteRouterOptions {
   graph?: RoadGraph;
   jobRepository?: JobRepository;
+  routeRepository?: RouteRepository;
   geocoder?: Geocoder;
 }
 
@@ -58,6 +61,10 @@ export function createApp(options: CreateAppOptions = {}) {
   );
 
   app.use('/api/routes', createRouteRouter(options));
+
+  if (options.routeRepository) {
+    app.use('/api/routes', createSavedRouteRouter(options.routeRepository));
+  }
 
   if (options.geocoder) {
     app.use('/api/geocoding', createGeocodingRouter(options.geocoder));

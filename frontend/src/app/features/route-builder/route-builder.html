@@ -125,15 +125,6 @@
             <p>{{ stopCount() }} of 25 stops</p>
           </div>
         </div>
-        <button
-          class="add-button"
-          type="button"
-          data-testid="add-stop"
-          [disabled]="stopCount() >= 25"
-          (click)="addStop()"
-        >
-          <span aria-hidden="true">＋</span> Add stop
-        </button>
       </div>
 
       <div class="stop-list">
@@ -262,9 +253,55 @@
         }
       </div>
 
+      <div class="stop-list-actions">
+        <button
+          class="add-button"
+          type="button"
+          data-testid="add-stop"
+          [disabled]="stopCount() >= 25"
+          (click)="addStop()"
+        >
+          <span aria-hidden="true">＋</span> Add stop
+        </button>
+      </div>
+
       @if (errorMessage()) {
         <p class="error-message" role="alert">{{ errorMessage() }}</p>
       }
+
+      <div class="processing-choice">
+        <div>
+          <strong>Processing method</strong>
+          <span>
+            {{
+              usesAsyncProcessing()
+                ? 'Track progress on the Job status page.'
+                : 'Stay here and see the result immediately.'
+            }}
+          </span>
+        </div>
+        <div class="input-mode-toggle" role="group" aria-label="Route processing method">
+          <button
+            type="button"
+            data-testid="instant-processing"
+            [class.active]="!usesAsyncProcessing()"
+            [attr.aria-pressed]="!usesAsyncProcessing()"
+            [disabled]="stopCount() > 15"
+            (click)="setBackgroundProcessing(false)"
+          >
+            Instant result
+          </button>
+          <button
+            type="button"
+            data-testid="background-processing"
+            [class.active]="usesAsyncProcessing()"
+            [attr.aria-pressed]="usesAsyncProcessing()"
+            (click)="setBackgroundProcessing(true)"
+          >
+            Background job
+          </button>
+        </div>
+      </div>
 
       <div class="submit-row">
         <button class="submit-button" type="submit" [disabled]="loading()">
@@ -272,7 +309,8 @@
             <span class="spinner" aria-hidden="true"></span>
             {{ resolvingAddresses() ? 'Finding addresses…' : 'Optimizing route…' }}
           } @else {
-            Optimize {{ stopCount() }} stops <span aria-hidden="true">→</span>
+            {{ usesAsyncProcessing() ? 'Queue' : 'Optimize' }} {{ stopCount() }} stops
+            <span aria-hidden="true">→</span>
           }
         </button>
         <p>

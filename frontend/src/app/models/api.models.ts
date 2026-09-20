@@ -42,6 +42,7 @@ export interface PointToPointResponse {
 export interface OptimizeRequest {
   origin: Coordinate;
   stops: Coordinate[];
+  background?: boolean;
 }
 
 export interface OptimizedRouteResponse {
@@ -54,6 +55,13 @@ export interface OptimizedRouteResponse {
   cached: boolean;
   optimized_path?: [number, number][];
   naive_path?: [number, number][];
+}
+
+export interface SavedRouteResponse extends OptimizedRouteResponse {
+  route_id: string;
+  origin: Coordinate;
+  stops: Coordinate[];
+  created_at: string;
 }
 
 export interface QueuedJobResponse {

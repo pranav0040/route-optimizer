@@ -8,6 +8,7 @@ import type {
   OptimizeResponse,
   PointToPointRequest,
   PointToPointResponse,
+  SavedRouteResponse,
 } from '../models/api.models';
 import { API_BASE_URL, ApiService } from './api.service';
 
@@ -164,10 +165,43 @@ describe('ApiService', () => {
     request.flush(expected);
   });
 
+  it('loads a persisted optimized route by ID', () => {
+    const expected: SavedRouteResponse = {
+      route_id: 'route/123',
+      origin: { lat: 12.9716, lng: 77.5946 },
+      stops: [
+        { lat: 12.9611, lng: 77.6387 },
+        { lat: 12.9352, lng: 77.6146 },
+      ],
+      optimized_order: [1, 0],
+      optimized_path: [
+        [12.9716, 77.5946],
+        [12.9352, 77.6146],
+      ],
+      total_distance_m: 11_150,
+      total_duration_s: 803,
+      naive_distance_m: 12_080,
+      naive_duration_s: 870,
+      improvement_pct: 7.7,
+      cached: true,
+      created_at: '2026-09-21T00:00:00.000Z',
+    };
+
+    service.getRoute('route/123').subscribe((response) => expect(response).toEqual(expected));
+    const request = http.expectOne('/api/routes/route%2F123');
+
+    expect(request.request.method).toBe('GET');
+    request.flush(expected);
+  });
+
   it('polls a queued job until it reaches a terminal state', fakeAsync(() => {
     let result: JobStatusResponse | undefined;
+    const statuses: JobStatusResponse['status'][] = [];
 
-    service.pollJobUntilComplete('job/123', 250).subscribe((response) => (result = response));
+    service.pollJobUntilComplete('job/123', 250).subscribe((response) => {
+      result = response;
+      statuses.push(response.status);
+    });
     const queued = http.expectOne('/api/jobs/job%2F123');
 
     queued.flush({ job_id: 'job/123', status: 'queued' } satisfies JobStatusResponse);
@@ -187,5 +221,6 @@ describe('ApiService', () => {
       status: 'completed',
       route_id: 'route-456',
     });
+    expect(statuses).toEqual(['queued', 'processing', 'completed']);
   }));
 });

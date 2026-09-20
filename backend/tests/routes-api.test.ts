@@ -1,5 +1,5 @@
 import request from 'supertest';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { createApp } from '../src/app.js';
 import type { NearestNode } from '../src/db/nearest-node.js';
@@ -279,6 +279,35 @@ describe('POST /api/routes/optimize', () => {
       status: 'queued',
       cached: false
     });
+  });
+
+  it('queues a small route when background processing is requested', async () => {
+    const enqueue = vi.fn(async () => '22222222-2222-4222-8222-222222222222');
+    const backgroundApp = createApp({
+      graph,
+      snapCoordinate,
+      jobQueue: { enqueue }
+    });
+    const body = {
+      origin: { lat: 0, lng: 0 },
+      stops: [
+        { lat: 0.002, lng: 0 },
+        { lat: 0.001, lng: 0 }
+      ],
+      background: true
+    };
+    const response = await request(backgroundApp).post('/api/routes/optimize').send(body);
+
+    expect(response.status).toBe(202);
+    expect(response.body).toEqual({
+      job_id: '22222222-2222-4222-8222-222222222222',
+      status: 'queued',
+      cached: false
+    });
+    expect(enqueue).toHaveBeenCalledOnce();
+    expect(enqueue).toHaveBeenCalledWith(
+      expect.objectContaining({ origin: body.origin, stops: body.stops })
+    );
   });
 
   it('returns the centralized validation error when stops is missing', async () => {

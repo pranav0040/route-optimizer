@@ -6,6 +6,7 @@ import type {
   OptimizeRequest,
   OptimizedRouteResponse,
   QueuedJobResponse,
+  SavedRouteResponse,
 } from '../models/api.models';
 
 export interface CoordinateDraft {
@@ -191,6 +192,31 @@ export class RouteStateService {
     this.currentRouteResult.set(null);
     this.errorMessage.set(null);
     this.loading.set(true);
+  }
+
+  loadSavedRoute(route: SavedRouteResponse) {
+    this.origin.set({
+      lat: String(route.origin.lat),
+      lng: String(route.origin.lng),
+      address: '',
+      inputMode: 'coordinates',
+      resolvedAddress: '',
+    });
+    this.stops.set(
+      route.stops.map((stop, index) => ({
+        id: index + 1,
+        lat: String(stop.lat),
+        lng: String(stop.lng),
+        address: '',
+        inputMode: 'coordinates',
+        resolvedAddress: '',
+      })),
+    );
+    this.nextStopId = route.stops.length + 1;
+    this.submittedRequest.set({ origin: route.origin, stops: route.stops });
+    this.currentRouteResult.set(route);
+    this.loading.set(false);
+    this.errorMessage.set(null);
   }
 
   private invalidateRoute() {

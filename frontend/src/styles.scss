@@ -3,15 +3,28 @@
 }
 
 :root {
-  --color-bg: #f5f5f3;
+  --color-bg: #f3f7f5;
   --color-surface: #ffffff;
-  --color-surface-subtle: #f0f0ed;
-  --color-ink: #171717;
-  --color-muted: #6f6f6a;
-  --color-line: #d9d9d4;
-  --color-line-strong: #b9b9b3;
-  --color-danger: #b42318;
-  --color-success: #287a4b;
+  --color-surface-subtle: #f6f9f7;
+  --color-ink: #14241d;
+  --color-muted: #68766f;
+  --color-line: #dce6e1;
+  --color-line-strong: #b8c8c0;
+  --color-primary: #197451;
+  --color-primary-dark: #105b3e;
+  --color-primary-soft: #e4f4eb;
+  --color-primary-softer: #f1faf5;
+  --color-action: #2563eb;
+  --color-action-dark: #1d4ed8;
+  --color-action-soft: #eef4ff;
+  --color-danger: #b83b33;
+  --color-danger-soft: #fff2f0;
+  --color-success: #21845b;
+  --shadow-sm: 0 1px 2px rgb(20 36 29 / 5%), 0 5px 18px rgb(20 36 29 / 4%);
+  --shadow-md: 0 16px 44px rgb(20 36 29 / 9%);
+  --radius-sm: 9px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
 }
 
 html,
@@ -29,7 +42,9 @@ body {
     BlinkMacSystemFont,
     'Segoe UI',
     sans-serif;
-  background: var(--color-bg);
+  background:
+    radial-gradient(circle at 88% 0%, rgb(199 234 214 / 42%), transparent 28rem),
+    var(--color-bg);
   color: var(--color-ink);
   -webkit-font-smoothing: antialiased;
 }
@@ -39,7 +54,24 @@ input {
   font: inherit;
 }
 
+button,
+a,
+input {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible {
+  outline: 3px solid rgb(25 116 81 / 22%);
+  outline-offset: 2px;
+}
+
+button:focus-visible {
+  outline-color: rgb(37 99 235 / 30%);
+}
+
 ::selection {
-  background: var(--color-ink);
+  background: var(--color-primary);
   color: white;
 }

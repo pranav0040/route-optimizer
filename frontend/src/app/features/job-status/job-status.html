@@ -3,27 +3,48 @@
     <p class="eyebrow">Background operations</p>
     <h1>Job status</h1>
     <p>
-      Large routes continue processing outside the browser. Paste a job ID to follow its progress or
-      retrieve the completed route reference.
+      Follow a background job as it runs, or open any completed optimization using its route ID.
     </p>
   </div>
 
-  <form class="lookup-form" (ngSubmit)="lookup()">
-    <label for="job-id">Job ID</label>
-    <div>
-      <input
-        id="job-id"
-        name="jobId"
-        autocomplete="off"
-        [ngModel]="jobId()"
-        (ngModelChange)="jobId.set($event)"
-        placeholder="b3f1c9…"
-      />
-      <button type="submit" [disabled]="loading()">
-        {{ loading() ? 'Watching…' : 'Check status' }}
-      </button>
-    </div>
-  </form>
+  <div class="lookup-grid">
+    <form class="lookup-form" (ngSubmit)="lookup()">
+      <label for="job-id">Track a job</label>
+      <div>
+        <input
+          id="job-id"
+          name="jobId"
+          autocomplete="off"
+          [ngModel]="jobId()"
+          (ngModelChange)="jobId.set($event)"
+          placeholder="Enter job ID"
+        />
+        <button type="submit" [disabled]="loading()">
+          {{ loading() ? 'Watching…' : 'Check status' }}
+        </button>
+      </div>
+    </form>
+
+    <form class="lookup-form route-lookup-form" (ngSubmit)="loadRoute()">
+      <label for="route-id">Open an optimized route</label>
+      <div>
+        <input
+          id="route-id"
+          name="routeId"
+          autocomplete="off"
+          [ngModel]="routeId()"
+          (ngModelChange)="routeId.set($event)"
+          placeholder="Enter completed route ID"
+        />
+        <button type="submit" [disabled]="loadingRoute()">
+          {{ loadingRoute() ? 'Opening…' : 'View route' }}
+        </button>
+      </div>
+      @if (routeErrorMessage()) {
+        <p class="inline-error" role="alert">{{ routeErrorMessage() }}</p>
+      }
+    </form>
+  </div>
 
   <div class="status-card" aria-live="polite">
     @if (job(); as currentJob) {
@@ -52,8 +73,19 @@
 
       @if (currentJob.route_id) {
         <div class="route-reference">
-          <span>Completed route ID</span>
-          <strong>{{ currentJob.route_id }}</strong>
+          <div>
+            <span>Completed route ID</span>
+            <strong>{{ currentJob.route_id }}</strong>
+          </div>
+          <button
+            class="view-route-button"
+            type="button"
+            [disabled]="loadingRoute()"
+            (click)="loadRoute(currentJob.route_id)"
+          >
+            {{ loadingRoute() ? 'Opening…' : 'View optimized route' }}
+            <span aria-hidden="true">→</span>
+          </button>
         </div>
       }
     } @else {

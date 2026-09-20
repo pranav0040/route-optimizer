@@ -1,5 +1,5 @@
 import { fakeAsync, TestBed, tick } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
 import { of } from 'rxjs';
 
 import { ApiService } from '../../services/api.service';
@@ -182,6 +182,8 @@ describe('RouteBuilderComponent', () => {
     const fixture = TestBed.createComponent(RouteBuilderComponent);
 
     fixture.detectChanges();
+    button(fixture.nativeElement, '[data-testid="instant-processing"]').click();
+    fixture.detectChanges();
     submit(fixture.nativeElement);
 
     expect(api.geocodeAddress).not.toHaveBeenCalled();
@@ -191,6 +193,31 @@ describe('RouteBuilderComponent', () => {
         { lat: 12.9611, lng: 77.6387 },
         { lat: 12.9352, lng: 77.6146 },
       ],
+      background: false,
+    });
+  });
+
+  it('opens job status when a background route is queued', () => {
+    const router = TestBed.inject(Router);
+    const navigate = spyOn(router, 'navigate').and.resolveTo(true);
+
+    api.optimize.and.returnValue(
+      of({
+        job_id: 'job-123',
+        status: 'queued',
+        cached: false,
+      }),
+    );
+    const fixture = TestBed.createComponent(RouteBuilderComponent);
+
+    fixture.detectChanges();
+    submit(fixture.nativeElement);
+
+    expect(api.optimize).toHaveBeenCalledWith(
+      jasmine.objectContaining({ background: true }),
+    );
+    expect(navigate).toHaveBeenCalledOnceWith(['/jobs'], {
+      queryParams: { id: 'job-123' },
     });
   });
 
@@ -259,6 +286,7 @@ describe('RouteBuilderComponent', () => {
         { lat: 12.976347, lng: 77.592928 },
         { lat: 12.9352, lng: 77.6146 },
       ],
+      background: true,
     });
     expect(routeState.stops()[0]).toEqual(
       jasmine.objectContaining({
