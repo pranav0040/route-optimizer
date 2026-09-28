@@ -1,0 +1,11 @@
+{$SITE_ADDRESS} {
+  encode zstd gzip
+
+  @api path /api/*
+  reverse_proxy @api api:3000
+
+  @websocket path /ws/*
+  reverse_proxy @websocket api:3000
+
+  reverse_proxy frontend:80
+}

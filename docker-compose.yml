@@ -117,6 +117,25 @@ services:
       start_period: 10s
     stop_grace_period: 15s
 
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    profiles: ['https']
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:-localhost}
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      api:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
+
   frontend:
     build:
       context: ./frontend
@@ -125,7 +144,7 @@ services:
       API_BASE_URL: ${API_BASE_URL:-/api}
       CARTO_BASEMAP_KEY: ${CARTO_BASEMAP_KEY:-}
     ports:
-      - '${FRONTEND_PORT:-4200}:80'
+      - '${FRONTEND_BIND_ADDRESS:-0.0.0.0}:${FRONTEND_PORT:-4200}:80'
     depends_on:
       api:
         condition: service_healthy
@@ -139,3 +158,5 @@ services:
 volumes:
   postgres_data:
   redis_data:
+  caddy_data:
+  caddy_config:
